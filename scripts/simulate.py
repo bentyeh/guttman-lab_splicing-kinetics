@@ -207,8 +207,10 @@ def simulate_transcripts(
 
     # -- splice initial transcripts --
     log_prob_unspliced = np.log(1 - gamma) * ((transcripts[:, [-1]] - pos_intron[1, :]) / v)
-    # `mask_to_splice`: boolean array of shape (n_transcripts, n_introns) denoting which introns to splice
-    mask_to_splice = (transcripts[:, :-1] >= 1) & (np.log(rng.random(transcripts[:, :-1].shape)) > log_prob_unspliced)
+    # `mask_to_splice`: array of shape (n_transcripts, n_introns)
+    #    value of 1 denotes introns to splice
+    #    value of np.nan denotes excluded intron
+    mask_to_splice = (transcripts[:, :-1] > 1) & (np.log(rng.random(transcripts[:, :-1].shape)) > log_prob_unspliced)
     mask_to_splice = mask_to_splice.astype(float)
     if alt_splicing is not False:
         # Limit mutually exclusive splicing: implementation 1
@@ -223,7 +225,7 @@ def simulate_transcripts(
         # randomly choose order to splice mutually exclusive introns
         splice_order = rng.permuted(np.repeat(arange_introns.reshape(1, -1), n_transcripts, axis=0), axis=1).T
         for idx_introns in splice_order:
-            mask_contains_spliced_intron = (transcripts[(arange_transcripts, idx_introns)] >= 1) & \
+            mask_contains_spliced_intron = (transcripts[(arange_transcripts, idx_introns)] > 1) & \
                                            (mask_to_splice[(arange_transcripts, idx_introns)] == 1)
             if not mask_contains_spliced_intron.any():
                 continue
@@ -232,13 +234,9 @@ def simulate_transcripts(
             excluded_introns = alt_splicing_nan[idx_introns[mask_contains_spliced_intron], :]
             mask_to_splice[mask_contains_spliced_intron, :] *= excluded_introns
 
-    # Convert mask of introns to splice into updated intron states:
-    # - Spliced introns: 1 --> -1
-    # - Excluded introns: np.nan
-    # - Untranscribed or currently transcribing introns: 0 --> value from transcripts
-    intron_states = mask_to_splice * -1
-    intron_states[intron_states == 0] = transcripts[:, :-1][intron_states == 0]
-    transcripts[:, :-1] = intron_states
+    # Update intron states
+    transcripts[:, :-1][mask_to_splice == 1] = -1
+    transcripts[:, :-1][np.isnan(mask_to_splice)] = np.nan
 
     # initialize counts of unspliced and spliced introns
     stats = stats_fun(transcripts, t=0, stats=None, **stats_kwargs)
@@ -251,20 +249,19 @@ def simulate_transcripts(
         n_transcripts = transcripts.shape[0]
         arange_transcripts = np.arange(n_transcripts)
 
-        mask_to_splice = (transcripts[:, :-1] == 1) & (rng.random(transcripts[:, :-1].shape) < gamma)
+        mask_to_splice = (transcripts[:, :-1] > 1) & (rng.random(transcripts[:, :-1].shape) < gamma)
         mask_to_splice = mask_to_splice.astype(float)
         if alt_splicing is not False:
             splice_order = rng.permuted(np.repeat(arange_introns.reshape(1, -1), n_transcripts, axis=0), axis=1).T
             for idx_introns in splice_order:
-                mask_contains_spliced_intron = (transcripts[(arange_transcripts, idx_introns)] == 1) & \
+                mask_contains_spliced_intron = (transcripts[(arange_transcripts, idx_introns)] > 1) & \
                                                (mask_to_splice[(arange_transcripts, idx_introns)] == 1)
                 if not mask_contains_spliced_intron.any():
                     continue
                 excluded_introns = alt_splicing_nan[idx_introns[mask_contains_spliced_intron], :]
                 mask_to_splice[mask_contains_spliced_intron, :] *= excluded_introns
-        intron_states = mask_to_splice * -1
-        intron_states[intron_states == 0] = transcripts[:, :-1][intron_states == 0]
-        transcripts[:, :-1] = intron_states
+        transcripts[:, :-1][mask_to_splice == 1] = -1
+        transcripts[:, :-1][np.isnan(mask_to_splice)] = np.nan
 
         # elongate
         v_int = int(np.rint(v))
@@ -279,6 +276,9 @@ def simulate_transcripts(
                                                     n_new_transcripts) + 1
                 transcripts = np.append(transcripts, new_transcripts, axis=0)
                 n_transcripts = transcripts.shape[0]
+        transcripts[:, :-1][transcripts[:, :-1] >= 0] = np.maximum(
+            (transcripts[:, [-1]] - pos_intron[[0], :] + 1) / intron_lengths[np.newaxis,],
+            0)[transcripts[:, :-1] >= 0]
 
         # compute statistics
         stats = stats_fun(transcripts, t, stats=stats, **stats_kwargs)
@@ -347,7 +347,7 @@ def parallel_simulations(n, *args, seed=None, use_tqdm=True, use_pool=True, n_cp
     time_points = np.array(tuple(stats_all[0].keys()))
     assert all((np.array_equal(np.array(tuple(stats.keys())), time_points)) for stats in stats_all)
     if np.isscalar(tuple(stats_all[0].values())[0]):
-        stats_all = np.vstack((np.array(tuple(stats.values())) for stats in stats_all))
+        stats_all = np.vstack([np.array(tuple(stats.values())) for stats in stats_all])
     else:
-        stats_all = np.stack((np.stack(tuple(stats.values())) for stats in stats_all))
+        stats_all = np.stack([np.stack(tuple(stats.values())) for stats in stats_all])
     return time_points, aggfun(stats_all)
