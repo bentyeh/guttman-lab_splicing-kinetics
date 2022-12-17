@@ -41,9 +41,9 @@ def count_per_splice_site(transcripts, t, stats=None, *, time_steps=None):
         if n_introns == 0:
             stats[t] = transcripts.shape[0]
         else:
-            stats[t] = np.hstack((np.nansum(transcripts[:, :-1] >= 0, axis=0),
+            stats[t] = np.vstack((np.nansum(transcripts[:, :-1] >= 0, axis=0),
                                   np.nansum(transcripts[:, :-1] > 1, axis=0),
-                                  np.nansum(transcripts[:, :-1] == -1, axis=0)))
+                                  np.nansum(transcripts[:, :-1] == -1, axis=0))).T
     return stats
 
 def su_ratio(transcripts, t, stats=None, *, time_steps=None):

@@ -100,7 +100,7 @@ def simulate_transcripts(
     splicing of one intron may be mutually exclusive with splicing of another intron.
 
     Key assumptions in current implementation:
-    - All transcripts share the same transcription start site.
+    - All transcripts share the same transcription start site and end site.
     - Transcription initiation is random (i.e., not bursting).
     - Elongation rate is constant over the entire length of the gene.
     - Splicing rate is constant for all introns.
@@ -291,7 +291,7 @@ def mean_and_var(stats_all):
     '''
     return np.mean(stats_all, axis=0), np.var(stats_all, axis=0)
 
-def parallel_simulations(n, *args, seed=None, use_tqdm=True, use_pool=True, n_cpus=None, aggfun=mean_and_var, **kwargs):
+def parallel_simulations(n, *args, seed=None, use_tqdm=True, use_pool=True, n_cpus=None, aggfun=None, **kwargs):
     '''
     Args
     - n: number of simulations
@@ -301,13 +301,16 @@ def parallel_simulations(n, *args, seed=None, use_tqdm=True, use_pool=True, n_cp
     - use_pool: bool. default=True
     - n_cpus: int. default=None
         If None, the number of available CPUs is determined automatically.
-    - aggfun: callable. default=mean_and_var
-        Aggregation function over 
+    - aggfun: callable. default=None.
+        Aggregation function over multiple simulations.
+        If None, returns all simulations (i.e., aggfun = lambda x: x)
     - **kwargs: keyword arguments passed to `simulate_transcripts()`
         Assumes that stats_fun returns a dict (int: np.ndarray)
 
     Returns
     '''
+    if aggfun is None:
+        aggfun = lambda x: x
     if use_pool:
         if use_tqdm:
             pbar = tqdm(total=n)
@@ -346,5 +349,5 @@ def parallel_simulations(n, *args, seed=None, use_tqdm=True, use_pool=True, n_cp
     if np.isscalar(tuple(stats_all[0].values())[0]):
         stats_all = np.vstack((np.array(tuple(stats.values())) for stats in stats_all))
     else:
-        stats_all = np.vstack((np.stack(tuple(stats.values())) for stats in stats_all))
+        stats_all = np.stack((np.stack(tuple(stats.values())) for stats in stats_all))
     return time_points, aggfun(stats_all)
