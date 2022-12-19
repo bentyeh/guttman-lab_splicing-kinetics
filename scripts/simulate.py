@@ -111,11 +111,11 @@ def simulate_transcripts(
     Arg(s)
     - Model parameters
       - params: np.ndarray. shape=(4,). dtype=float
-        - alpha: Production rate (transcripts / time)
-        - beta: Decay rate (1 / time), must be between 0 and 1
-        - gamma: Splicing rate (1 / time), must be between 0 and 1.
+        - k_init: Production rate (transcripts / time)
+        - k_decay: Decay rate (1 / time), must be between 0 and 1
+        - k_splice: Splicing rate (1 / time), must be between 0 and 1.
             Assumed to be constant for different splice junctions in the same gene
-        - v: Elongation velocity (nucleotides / time)
+        - k_elong: Elongation velocity (nucleotides / time)
     - Experiment parameters
       - pos_intron: np.ndarray. shape=(2, n_introns)
           Coordinates of introns, 1-indexed. If gene isoform is intronless, pos_intron has shape (2, 0).
@@ -165,10 +165,10 @@ def simulate_transcripts(
     # check argument values
     if log10:
         params = np.power(10, params)
-    alpha, beta, gamma, v = params
-    assert gamma >= 0 and gamma < 1
-    assert beta >= 0 and beta < 1
-    assert v >= 0 and alpha >=0
+    k_init, k_decay, k_splice, k_elong = params
+    assert k_splice >= 0 and k_splice < 1
+    assert k_decay >= 0 and k_decay < 1
+    assert k_elong >= 0 and k_init >=0
 
     if rng is None:
         rng = np.random.default_rng()
@@ -199,14 +199,14 @@ def simulate_transcripts(
     # - initial condition: elongating transcripts at the time of labeling initiation
     # - if no transcripts are initialized (i.e., due to chance or a super low transcription rate), `transcripts` remains
     #   a numpy.ndarray of shape (0, n_introns + 1)
-    n_transcripts = rng.poisson(gene_length * alpha / v)
+    n_transcripts = rng.poisson(gene_length * k_init / k_elong)
     arange_transcripts = np.arange(n_transcripts)
     transcripts = np.zeros((n_transcripts, n_introns + 1), dtype=float)
     transcripts[:, -1] = rng.choice(gene_length, n_transcripts) + 1
     transcripts[:, :-1] = np.maximum((transcripts[:, [-1]] - pos_intron[[0], :] + 1) / intron_lengths[np.newaxis,], 0)
 
     # -- splice initial transcripts --
-    log_prob_unspliced = np.log(1 - gamma) * ((transcripts[:, [-1]] - pos_intron[1, :]) / v)
+    log_prob_unspliced = np.log(1 - k_splice) * ((transcripts[:, [-1]] - pos_intron[1, :]) / k_elong)
     # `mask_to_splice`: array of shape (n_transcripts, n_introns)
     #    value of 1 denotes introns to splice
     #    value of np.nan denotes excluded intron
@@ -244,12 +244,12 @@ def simulate_transcripts(
     # simulation over time
     for t in range(1, n_time_steps):
         # decay
-        mask_decay = (transcripts[:, -1] == gene_length) & (rng.random(n_transcripts) < beta)
+        mask_decay = (transcripts[:, -1] == gene_length) & (rng.random(n_transcripts) < k_decay)
         transcripts = transcripts[~mask_decay, :]
         n_transcripts = transcripts.shape[0]
         arange_transcripts = np.arange(n_transcripts)
 
-        mask_to_splice = (transcripts[:, :-1] > 1) & (rng.random(transcripts[:, :-1].shape) < gamma)
+        mask_to_splice = (transcripts[:, :-1] > 1) & (rng.random(transcripts[:, :-1].shape) < k_splice)
         mask_to_splice = mask_to_splice.astype(float)
         if alt_splicing is not False:
             splice_order = rng.permuted(np.repeat(arange_introns.reshape(1, -1), n_transcripts, axis=0), axis=1).T
@@ -264,12 +264,12 @@ def simulate_transcripts(
         transcripts[:, :-1][np.isnan(mask_to_splice)] = np.nan
 
         # elongate
-        v_int = int(np.rint(v))
+        v_int = int(np.rint(k_elong))
         transcripts[:, -1] = np.minimum(transcripts[:, -1] + v_int, gene_length)
 
         # initiation
         if t < t_wash:
-            n_new_transcripts = rng.poisson(alpha)
+            n_new_transcripts = rng.poisson(k_init)
             if n_new_transcripts > 0:
                 new_transcripts = np.zeros((n_new_transcripts, n_introns + 1), dtype=int)
                 new_transcripts[:, -1] = rng.choice(np.minimum(v_int, gene_length) - 1,
