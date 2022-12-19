@@ -291,7 +291,16 @@ def mean_and_var(stats_all):
     '''
     return np.mean(stats_all, axis=0), np.var(stats_all, axis=0)
 
-def parallel_simulations(n, *args, seed=None, use_tqdm=True, use_pool=True, n_cpus=None, aggfun=None, **kwargs):
+def parallel_simulations(
+    n,
+    *args,
+    multi_stats=False,
+    seed=None,
+    use_tqdm=True,
+    use_pool=True,
+    n_cpus=None,
+    aggfun=None,
+    **kwargs):
     '''
     Aggregate statistics over multiple simulations.
 
@@ -300,6 +309,12 @@ def parallel_simulations(n, *args, seed=None, use_tqdm=True, use_pool=True, n_cp
         Number of simulations
     - *args
         Positional arguments passed to `simulate_transcripts()`
+    - multi_stats: bool. default=False
+      - True: `stats` returned from each simulation is assumed to be of the form returned by
+        stats_transcripts.wrap_wrap_multiple_stats():
+          dict (function name (str): dict (time point (int): computed statistics (np.ndarray)))
+      - False: `stats` returned from each simulation is assumed to be of the form
+          dict (time point (int): computed statistics (np.ndarray))
     - seed: int. default=None
       - If an integer, the random number generator for the ith simulation (0-indexed) is seeded with `seed + i`.
       - Otherwise, the random number generator for each simulation is seeded with `None`.
@@ -359,6 +374,28 @@ def parallel_simulations(n, *args, seed=None, use_tqdm=True, use_pool=True, n_cp
         for i in range_fun(n):
             kwargs['rng'] = np.random.default_rng(seed + i) if isinstance(seed, int) else None
             stats_all[i] = simulate_transcripts(*args, **kwargs.copy())
+
+    if multi_stats:
+        # check stats function are consistent across simulations
+        stats_fun_names = tuple(stats_all[0].keys())
+        assert all((set(stats_fun_names) == set(stats.keys()) for stats in stats_all))
+
+        # check time points are consistent across stats functions and across simulations
+        time_points = np.array(tuple(stats_all[0][stats_fun_names[0]].keys()))
+        assert all((np.array_equal(time_points, np.array(tuple(stats[name].keys()))))
+                   for name in stats_fun_names for stats in stats_all)
+
+        # separately aggregate by stats function
+        if aggfun is None:
+            return time_points, stats_all
+
+        agg_stats = {}
+        for name in stats_fun_names:
+            if np.isscalar(tuple(stats_all[0][name].values())[0]):
+                agg_stats[name] = aggfun(np.vstack([np.array(tuple(stats[name].values())) for stats in stats_all]))
+            else:
+                agg_stats[name] = aggfun(np.stack([np.stack(tuple(stats[name].values())) for stats in stats_all]))
+        return time_points, agg_stats
 
     time_points = np.array(tuple(stats_all[0].keys()))
     assert all((np.array_equal(np.array(tuple(stats.keys())), time_points)) for stats in stats_all)

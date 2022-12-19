@@ -5,8 +5,6 @@ def wrap_multiple_stats(*stat_funs):
     '''
     Create callable that wraps multiple stats functions together.
 
-    Note: Not currently generally compatible with simulate.parallel_simulations(), unless `aggfun` is set to None.
-
     Arg(s)
     - *stat_funs: one or more stats functions with definition <stat_fun>(transcripts, t, stats=None, *, ...)
 
