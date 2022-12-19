@@ -293,24 +293,43 @@ def mean_and_var(stats_all):
 
 def parallel_simulations(n, *args, seed=None, use_tqdm=True, use_pool=True, n_cpus=None, aggfun=None, **kwargs):
     '''
+    Aggregate statistics over multiple simulations.
+
     Args
-    - n: number of simulations
-    - *args: positional arguments passed to `simulate_transcripts()`
+    - n: int
+        Number of simulations
+    - *args
+        Positional arguments passed to `simulate_transcripts()`
     - seed: int. default=None
+      - If an integer, the random number generator for the ith simulation (0-indexed) is seeded with `seed + i`.
+      - Otherwise, the random number generator for each simulation is seeded with `None`.
     - use_tqdm: bool. default=True
+        Show tqdm progress bar over the number of simulations
     - use_pool: bool. default=True
+        Parallelize simulations using a Process pool.
     - n_cpus: int. default=None
         If None, the number of available CPUs is determined automatically.
     - aggfun: callable. default=None.
         Aggregation function over multiple simulations.
-        If None, returns all simulations (i.e., aggfun = lambda x: x)
+        - If None, returns all simulations (i.e., aggfun = lambda x: x) as a list.
+        - Otherwise, must have definition <aggfun>(stats_all) where `stats_all` is a NumPy array of shape:
+          - (n, time_point) if `stats_fun` returns a scalar value at each time point
+          - (n, time_point, *(shape)) if `stats_fun` returns a NumPy array of shape `(shape)` at each time point.
+          - Example: stats_transcripts.count_per_splice_site returns an array of shape (n_introns, 3) at each time
+            point, so the final output over 1 simulation is (time_point, n_introns, 3). Over `n` simulations, the shape
+            becomes (n, time_point, n_introns, 3).
     - **kwargs: keyword arguments passed to `simulate_transcripts()`
-        Assumes that stats_fun returns a dict (int: np.ndarray)
+      - Assumes that `stats_fun` returns a dict (int: np.ndarray) mapping from time point to computed statistics
+      - Note that the "rng" key in kwargs is ignored, since it is assumed that each parallel run should have a different
+        seed. See `seed` argument.
 
     Returns
+    - time_points: np.ndarray
+        Time points
+    - <variable>
+        The result of calling `aggfun` on a stack of outputs from each simulation.
     '''
-    if aggfun is None:
-        aggfun = lambda x: x
+    kwargs = kwargs.copy()
     if use_pool:
         if use_tqdm:
             pbar = tqdm(total=n)
@@ -335,17 +354,18 @@ def parallel_simulations(n, *args, seed=None, use_tqdm=True, use_pool=True, n_cp
             p.join()
         stats_all = [result.get() for result in results]
     else:
-        stats_all = []
+        stats_all = [None] * n
         range_fun = trange if use_tqdm else range
         for i in range_fun(n):
-            stats = simulate_transcripts(
-                *args,
-                **kwargs.copy(),
-                rng=np.random.default_rng(seed + i) if isinstance(seed, int) else None)
-            stats_all.append(stats)
+            kwargs['rng'] = np.random.default_rng(seed + i) if isinstance(seed, int) else None
+            stats_all[i] = simulate_transcripts(*args, **kwargs.copy())
 
     time_points = np.array(tuple(stats_all[0].keys()))
     assert all((np.array_equal(np.array(tuple(stats.keys())), time_points)) for stats in stats_all)
+
+    if aggfun is None:
+        return time_points, stats_all
+
     if np.isscalar(tuple(stats_all[0].values())[0]):
         stats_all = np.vstack([np.array(tuple(stats.values())) for stats in stats_all])
     else:
