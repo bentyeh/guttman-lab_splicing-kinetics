@@ -311,7 +311,7 @@ def parallel_simulations(n, *args, seed=None, use_tqdm=True, use_pool=True, n_cp
         If None, the number of available CPUs is determined automatically.
     - aggfun: callable. default=None.
         Aggregation function over multiple simulations.
-        - If None, returns all simulations (i.e., aggfun = lambda x: x) as a list.
+        - If None, returns a list of all simulations.
         - Otherwise, must have definition <aggfun>(stats_all) where `stats_all` is a NumPy array of shape:
           - (n, time_point) if `stats_fun` returns a scalar value at each time point
           - (n, time_point, *(shape)) if `stats_fun` returns a NumPy array of shape `(shape)` at each time point.

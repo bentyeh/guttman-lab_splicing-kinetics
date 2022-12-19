@@ -1,6 +1,34 @@
 import warnings
 import numpy as np
 
+def wrap_multiple_stats(*stat_funs):
+    '''
+    Create callable that wraps multiple stats functions together.
+
+    Note: Not currently generally compatible with simulate.parallel_simulations(), unless `aggfun` is set to None.
+
+    Arg(s)
+    - *stat_funs: one or more stats functions with definition <stat_fun>(transcripts, t, stats=None, *, ...)
+
+    Returns
+    - multiple_stats: callable
+      - Wrapper function for multiple stats functions. When called, returns the following `stats` object:
+        - stats: dict (str: <variable>)
+          - Keys are the names of the stats functions
+          - Values are the return values of the stats functions
+    '''
+    stat_funs_names = [stat_fun.__name__ for stat_fun in stat_funs]
+    def multiple_stats(transcripts, t, stats=None, *, stat_kwargs=None):
+        if stat_kwargs is None:
+            stat_kwargs = {name: dict() for name in stat_funs_names}
+        if stats is None:
+            stats = {name: dict() for name in stat_funs_names}
+        for stat_fun in stat_funs:
+            name = stat_fun.__name__
+            stats[name] = stat_fun(transcripts, t, stats=stats[name], **stat_kwargs[name])
+        return stats
+    return multiple_stats
+
 def count_per_splice_site(transcripts, t, stats=None, *, time_steps=None):
     '''
     Counts of each splice site.
