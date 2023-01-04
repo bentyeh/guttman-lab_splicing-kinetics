@@ -72,9 +72,9 @@ def count_per_splice_site(transcripts, t, stats=None, *, time_steps=None):
                                   np.nansum(transcripts[:, :-1] == -1, axis=0))).T
     return stats
 
-def su_ratio(transcripts, t, stats=None, *, time_steps=None):
+def spliced_fraction(transcripts, t, stats=None, *, time_steps=None):
     '''
-    Ratio of spliced to unspliced transcripts for each intron.
+    Ratio of spliced to (spliced + unspliced) transcripts for each intron.
 
     Arg(s)
     - transcripts: np.ndarray. shape=(<variable>, n_introns + 1). dtype=float
@@ -94,7 +94,7 @@ def su_ratio(transcripts, t, stats=None, *, time_steps=None):
         Stores computed statistics. See returns.
     - time_steps: list of int. default=None. len=n_time_steps
         Time steps to include in return. If None, all time steps are included.
-    
+
     Returns
     - stats: dict (int: np.ndarray)
         Keys: time steps
@@ -112,5 +112,5 @@ def su_ratio(transcripts, t, stats=None, *, time_steps=None):
             stats[t] = 1
         else:
             stats[t] = np.nansum(transcripts[:, :-1] == -1, axis=0) / \
-                       np.nansum(transcripts[:, :-1] > 1, axis=0)
+                       (np.nansum(transcripts[:, :-1] == -1, axis=0) + np.nansum(transcripts[:, :-1] > 1, axis=0))
     return stats
