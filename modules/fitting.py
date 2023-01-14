@@ -292,7 +292,7 @@ def main():
         [[ 828, 1135, 1669, 2363, 2579],
          [ 952, 1229, 2122, 2449, 3537]])
     time_steps = np.array([0, 10, 15, 20, 25, 30, 45, 60, 75, 90, 120, 240]) * 60 + 600
-    mean_fillna0 = np.load('/central/groups/guttman/btyeh/splicing-kinetics/data_aux/sim_spliced_fraction/mean_fillna-0.npy')
+    mean_fillna0 = np.load(os.path.join(dir_project, 'data_aux', 'sim_spliced_fraction', 'mean_fillna-0.npy'))
     data = mean_fillna0[time_steps - 1, :]
     data_time = time_steps - 1
     bounds_np = np.array([(0.01, 50), (5e-3, 0.5), (5e-3, 0.5), (5, 100)])

@@ -1,4 +1,3 @@
-import warnings
 import numpy as np
 
 def wrap_multiple_stats(*stat_funs):
