@@ -5,6 +5,7 @@ Simulate transcription and splicing
 import itertools
 import multiprocessing as mp
 import os
+import time
 
 import numpy as np
 from tqdm.auto import tqdm, trange
@@ -94,7 +95,7 @@ def simulate_transcripts(
     params,
     pos_intron, gene_length, n_time_steps, t_wash=600,
     stats_fun=stats_raw, stats_kwargs=None,
-    log10=False, alt_splicing=True, rng=None):
+    log10=False, alt_splicing=True, rng=None, verbose=True):
     '''
     Simulate transcription, elongation, splicing, and decay of transcripts. Allows for alternative splicing where
     splicing of one intron may be mutually exclusive with splicing of another intron.
@@ -157,6 +158,8 @@ def simulate_transcripts(
             would preclude splicing of intron j. See mutually_exclusive_splicing()
       - rng: np.random.Generator. default=None
           Random number generator. If None, uses np.random.default_rng().
+      - verbose: bool. default=True
+          Print out status messages every 15 seconds.
     
     Returns
     - stats: <variable>
@@ -169,6 +172,7 @@ def simulate_transcripts(
     assert k_splice >= 0 and k_splice < 1
     assert k_decay >= 0 and k_decay < 1
     assert k_elong >= 0 and k_init >=0
+    assert gene_length > 0
 
     if rng is None:
         rng = np.random.default_rng()
@@ -204,7 +208,7 @@ def simulate_transcripts(
     transcripts = np.zeros((n_transcripts, n_introns + 1), dtype=float)
     transcripts[:, -1] = rng.choice(gene_length, n_transcripts) + 1
     transcripts[:, :-1] = np.maximum((transcripts[:, [-1]] - pos_intron[[0], :] + 1) / intron_lengths[np.newaxis,], 0)
-
+    
     # -- splice initial transcripts --
     log_prob_unspliced = np.log(1 - k_splice) * ((transcripts[:, [-1]] - pos_intron[1, :]) / k_elong)
     # `mask_to_splice`: array of shape (n_transcripts, n_introns)
@@ -240,9 +244,25 @@ def simulate_transcripts(
 
     # initialize counts of unspliced and spliced introns
     stats = stats_fun(transcripts, t=0, stats=None, **stats_kwargs)
+    
+    if verbose:
+        time_start = time.time()
+        # t = 0
+        # def interval_status(interval):
+        #     timer = threading.Timer(interval, interval_status, (interval,))
+        #     timer.daemon = True
+        #     timer.start()
+        #     print(dict(params=params, t=t, n_transcripts=n_transcripts))
+        # interval_status(1)
+        # # see https://stackoverflow.com/a/3393759
 
     # simulation over time
     for t in range(1, n_time_steps):
+        if verbose and t % 10 == 0:
+            time_now = time.time()
+            if time_now > time_start + 15:
+                time_start = time_now
+                print(dict(params=params, t=t, n_transcripts=n_transcripts))
         # decay
         mask_decay = (transcripts[:, -1] == gene_length) & (rng.random(n_transcripts) < k_decay)
         transcripts = transcripts[~mask_decay, :]
@@ -264,7 +284,7 @@ def simulate_transcripts(
         transcripts[:, :-1][np.isnan(mask_to_splice)] = np.nan
 
         # elongate
-        v_int = int(np.rint(k_elong))
+        v_int = int(k_elong) + (rng.random() > (k_elong - int(k_elong)))
         transcripts[:, -1] = np.minimum(transcripts[:, -1] + v_int, gene_length)
 
         # initiation
@@ -272,8 +292,11 @@ def simulate_transcripts(
             n_new_transcripts = rng.poisson(k_init)
             if n_new_transcripts > 0:
                 new_transcripts = np.zeros((n_new_transcripts, n_introns + 1), dtype=int)
-                new_transcripts[:, -1] = rng.choice(np.minimum(v_int, gene_length) - 1,
-                                                    n_new_transcripts) + 1
+                if np.minimum(v_int, gene_length) <= 1:
+                    new_transcripts[:, -1] = 1
+                else:
+                    new_transcripts[:, -1] = rng.choice(np.minimum(v_int, gene_length) - 1,
+                                                        n_new_transcripts) + 1
                 transcripts = np.append(transcripts, new_transcripts, axis=0)
                 n_transcripts = transcripts.shape[0]
         transcripts[:, :-1][transcripts[:, :-1] >= 0] = np.maximum(
@@ -355,6 +378,7 @@ def parallel_simulations(
                 n_cpus = len(os.sched_getaffinity(0))
             except:
                 n_cpus = os.cpu_count()
+    if use_pool and n_cpus > 1:
         results = []
         with mp.Pool(n_cpus) as p:
             for i in range(n):
