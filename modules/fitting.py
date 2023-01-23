@@ -172,18 +172,21 @@ def iterative_grid_search(
         Describes stopping criteria that was met
     - xs: np.ndarray. shape=(z, n)
     - losses: np.ndarray. shape=(z,)
+    
+    <TODO> Bounds and previous_xs management
+    - Do not need to recompute loss if x is in previous_xs
+    - Handle case where len(xs) is not product(x0_per_param.shape)
     '''
-    pdb.set_trace()
     kwargs = dict() if kwargs is None else kwargs.copy()
     n = bounds.shape[0]
     assert all([bounds[i, 0] <= bounds[i, 1] for i in range(n)])
-    
+    assert num >= 1    
 
     x0_per_param = list(np.linspace(bounds[:, 0], bounds[:, 1], num=num, endpoint=True).T)  # shape: (num, n)
     x0_per_param = [np.sort(np.unique(x0)) for x0 in x0_per_param]
     x0_shapes = tuple(map(len, x0_per_param))
     xs = np.array(list(itertools.product(*x0_per_param))) # shape: (num**n, n)
-    previous_xs = np.stack((xs, previous_xs)) if previous_xs else xs
+    previous_xs = np.vstack((xs, previous_xs)) if previous_xs is not None else xs
 
     if use_pool:
         try:
@@ -202,29 +205,25 @@ def iterative_grid_search(
             p.join()
         losses = np.array([result.get() for result in results])
     else:
-        print(xs)
         losses = np.array([fun(x, *args, **kwargs) for x in xs])
-        print(losses)
-        print('here', flush=True)
-        print(losses.shape)
-        print(np.info(losses))
-    
-    print('here2', flush=True)
 
     idx_min = np.argmin(losses)
     losses_min = losses[idx_min]
     params_min = xs[idx_min]
 
+    max_depth -= 1
     if callback:
         callback(params_min, losses_min, bounds, max_depth)
 
     status = []
-    if max_depth <= 1:
+    if max_depth <= 0:
         status.append('max_depth reached')
-    if previous_losses:
+    if num == 1:
+        status.append('only parameter sample requested')
+    if previous_losses is not None:
         if (np.abs(previous_losses.min() - losses_min) <= tol) or (previous_losses.min() < losses_min):
             status.append('convergence tolerance reached')
-        previous_losses = np.concatenate(losses, previous_losses)
+        previous_losses = np.concatenate((losses, previous_losses))
         idx_min_all = np.argmin(previous_losses)
         losses_min_all = previous_losses[idx_min_all]
         params_min_all = previous_xs[idx_min_all]
@@ -238,7 +237,7 @@ def iterative_grid_search(
             x=params_min_all,
             loss=losses_min_all,
             bounds=bounds,
-            depth_remaining=max_depth - 1,
+            depth_remaining=max_depth,
             status=status,
             xs=previous_xs,
             losses=previous_losses)
@@ -268,7 +267,7 @@ def iterative_grid_search(
             kwargs=kwargs,
             num=num,
             tol=tol,
-            max_depth=max_depth - 1,
+            max_depth=max_depth,
             greediness=greediness,
             use_pool=use_pool,
             callback=callback,
@@ -278,12 +277,12 @@ def iterative_grid_search(
     # combine results
     idx_min_labels = np.argmin([res['loss'] for res in results])
     return dict(
-        x=results[i]['x'],
-        loss=results[i]['loss'],
-        bounds = results[i]['bounds'],
-        depth_remaining = results[i]['depth_remaining'],
-        status = results[i]['status'],
-        xs=np.stack([res['xs'] for res in results]),
+        x=results[idx_min_labels]['x'],
+        loss=results[idx_min_labels]['loss'],
+        bounds=results[idx_min_labels]['bounds'],
+        depth_remaining=results[idx_min_labels]['depth_remaining'],
+        status=results[idx_min_labels]['status'],
+        xs=np.vstack([res['xs'] for res in results]),
         losses=np.concatenate([res['losses'] for res in results]))
 
 def main():
@@ -291,7 +290,7 @@ def main():
     pos_intron = np.array(
         [[ 828, 1135, 1669, 2363, 2579],
          [ 952, 1229, 2122, 2449, 3537]])
-    time_steps = np.array([0, 10, 15, 20, 25, 30, 45, 60, 75, 90, 120, 240]) * 60 + 600
+    time_steps = np.array([0, 10]) * 60 + 600 # , 15, 20]) * 60 + 600 # , 25, 30, 45, 60, 75, 90, 120, 240]) * 60 + 600
     mean_fillna0 = np.load(os.path.join(dir_project, 'data_aux', 'sim_spliced_fraction', 'mean_fillna-0.npy'))
     data = mean_fillna0[time_steps - 1, :]
     data_time = time_steps - 1
@@ -300,11 +299,13 @@ def main():
     res = iterative_grid_search(
         loss_sf,
         np.log10(bounds_np),
-        num=1,
+        num=2,
+        max_depth=2,
         args=(data_time, data, pos_intron, gene_length),
         kwargs=dict(n=1, kwargs=dict(use_tqdm=True, log10=True, use_pool=False)),
         use_pool=False, use_tqdm=True,
         callback=callback_iter)
+    return res
 
 if __name__ == '__main__':
     main()
