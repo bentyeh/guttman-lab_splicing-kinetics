@@ -308,6 +308,12 @@ def simulate_transcripts(
 
     return stats
 
+def mean_nan(stats_all):
+    '''
+    Replace all NaN values with 1 and return mean taken over axis=0 (presumed to be parallel simulations)
+    '''
+    return np.mean(np.nan_to_num(stats_all, nan=1), axis=0)
+
 def mean_and_var(stats_all):
     '''
     Return mean and variance taken over axis=0 (presumed to be parallel simulations)
