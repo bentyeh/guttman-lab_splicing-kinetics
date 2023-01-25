@@ -112,9 +112,9 @@ def callback_gp(res, log10=False):
     
     Returns: None
     '''
-    print('Current parameters:', 10**res.x_iters[-1] if log10 else res.x_iters[-1])
+    print('Current parameters:', 10**np.array(res.x_iters[-1]) if log10 else res.x_iters[-1])
     print('Current loss:', res.func_vals[-1])
-    print('Best parameters:', 10**res.x if log10 else res.x)
+    print('Best parameters:', 10**np.array(res.x) if log10 else res.x)
     print('Best loss:', res.fun)
     print('-----')
 
