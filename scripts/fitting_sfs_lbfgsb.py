@@ -3,6 +3,8 @@ import sys
 import argparse
 import numpy as np
 import pickle
+import time
+import scipy.optimize
 
 dir_project = os.path.split(os.path.split(os.path.realpath(__file__))[0])[0]
 sys.path.append(os.path.join(dir_project, 'modules'))
@@ -22,18 +24,26 @@ def main(n, index):
     data = mean_fillna[time_steps - 1, :]
     data_time = time_steps - 1
     bounds = np.array([(0.01, 20), (5e-4, 0.5), (1e-3, 0.5), (10, 100)])
-    res = fitting.iterative_grid_search(
+    x0 = np.array([np.mean(bound) for bound in np.log10(bounds)])
+    print(x0, 10**x0)
+    time_start = time.time()
+    res = scipy.optimize.minimize(
         fitting.loss_sse,
-        np.log10(bounds),
-        num=4,
-        max_depth=5,
-        args=('spliced_fraction', data_time, data, pos_intron, gene_length),
-        kwargs=dict(n=n, kwargs=dict(use_tqdm=True, log10=True, use_pool=False)),
-        use_pool=True, use_tqdm=True,
-        callback=fitting.callback_iter,
-        kwargs_callback=dict(log10=True))
-    with open(os.path.join(dir_sfs, f'fit-igs-{index}.pkl'), 'wb') as f:
-        pickle.dump(res)
+        x0,
+        args=('count_per_splice_site', data_time, data, pos_intron, gene_length,
+              n, int(1e9), None, dict(log10=True, use_tqdm=True, use_pool=True)),
+        method='L-BFGS-B',
+        bounds=bounds,
+        # options={'maxiter': 5, 'eps': 1e-1},
+        callback=lambda xk: fitting.callback_scipy(
+            xk,
+            'count_per_splice_site', data_time, data, pos_intron, gene_length,
+            log10=True,
+            time_start=time_start,
+            n=n,
+            kwargs=dict(log10=True, use_tqdm=True, use_pool=True)))
+    with open(os.path.join(dir_sfs, f'fit-lbfgsb-{index}.pkl'), 'wb') as f:
+        pickle.dump(res, f)
     return res
 
 if __name__ == '__main__':

@@ -65,7 +65,7 @@ def loss_sse(x, stats_fun, data_time, data, pos_intron, gene_length,
             np.any((x < bounds[:, 0]) | (x > bounds[:, 1])) * bounds_error + \
             np.sum((np.maximum(bounds[:, 0] - x, 0) + np.maximum(x - bounds[:, 1], 0))) * bounds_error
         if total_bounds_error:
-            print('bounds error:', total_bounds_error)
+            print('bounds error:', total_bounds_error, flush=True)
             return total_bounds_error
     _, sim = simulate.parallel_simulations(
         n,

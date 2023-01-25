@@ -1,5 +1,5 @@
 '''
-Simulate splicing bond counts for mouse Actb gene
+Simulate spliced fraction for mouse Actb gene
 
 Assumes the following project directory structure:
 - project directory/
@@ -8,7 +8,7 @@ Assumes the following project directory structure:
     - simulate.py
     - stats_transcripts.py
   - scripts/
-    - simulate-bcs.py (this file)
+    - simulate_sfs.py (this file)
 '''
 
 import os
@@ -21,7 +21,7 @@ sys.path.append(os.path.join(dir_project, 'modules'))
 import simulate
 import stats_transcripts
 
-dir_results = os.path.join(dir_project, 'data_aux', 'sim_bond_counts')
+dir_results = os.path.join(dir_project, 'data_aux', 'sim_spliced_fraction')
 os.makedirs(dir_results, exist_ok=True)
 
 # mouse Actb main isoform (ENSMUST00000100497.10)
@@ -44,25 +44,28 @@ if not os.path.exists(file_params):
 
 def aggfun(x):
     '''
-    Arg: shape=(n_simulations, time_point, n_introns, 3)
+    Arg: shape=(n_simulations, time_point, n_introns)
     '''
     mean = np.mean(x, axis=0)
-    return mean
+    mean_fillna = np.mean(np.nan_to_num(x, nan=1), axis=0)
+    return mean, mean_fillna
 
 def main(n, index):
     params = np.load(file_params)
-    time_points, mean = simulate.parallel_simulations(
+    time_points, (mean, mean_fillna) = simulate.parallel_simulations(
         n,
         params[index],
         pos_intron,
         gene_length,
         time_steps[-1],
-        stats_fun=stats_transcripts.count_per_splice_site,
+        stats_fun=stats_transcripts.spliced_fraction,
         aggfun=aggfun,
         alt_splicing=False,
         seed=0)
     file_mean = os.path.join(dir_results, f'mean-{index}.npy')
+    file_mean_fillna = os.path.join(dir_results, f'mean_fillna-{index}.npy')
     np.save(file_mean, mean)
+    np.save(file_mean_fillna, mean_fillna)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Simulate transcription.')
