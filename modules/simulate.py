@@ -384,7 +384,7 @@ def parallel_simulations(
                 n_cpus = len(os.sched_getaffinity(0))
             except:
                 n_cpus = os.cpu_count()
-    if use_pool and n_cpus > 1:
+    if use_pool and n_cpus > 1 and n > 1:
         results = []
         with mp.Pool(n_cpus) as p:
             for i in range(n):
