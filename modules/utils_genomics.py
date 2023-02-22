@@ -2,33 +2,6 @@ import numpy as np
 import pandas as pd
 import scipy.sparse
 
-def parse_annotation_to_pos_intron(df):
-    '''
-    Parse GTF annotation for a transcript into a `pos_intron` Numpy array denoting intron coordinates.
-
-    Args
-    - df: pd.DataFrame
-        GTF format with all entries corresponding to a particular transcript. Must contain columns 'feature type',
-        'start', and 'end'.
-
-    Returns
-    - pos_intron: np.ndarray. shape=(2, n_introns)
-        Coordinates of introns, 1-indexed. If gene isoform is intronless, pos_intron has shape (2, 0).
-    - gene_length: int
-        Number of nucleotides from transcription start site to transcription end site
-    '''
-    start = int(df.loc[df['feature type'] == 'transcript', 'start'])
-    end = int(df.loc[df['feature type'] == 'transcript', 'end'])
-    gene_length = end - start + 1
-    df_exons = df.loc[df['feature type'] == 'exon'].sort_values(['start', 'end'])
-    assert df_exons.iloc[0]['start'] == start
-    introns = []
-    for i in range(1, len(df_exons)):
-        introns.append((df_exons.iloc[i-1]['end'] + 1, df_exons.iloc[i]['start'] - 1))
-    pos_intron = np.array(introns).T - start + 1
-    assert np.all(pos_intron[1, :] - pos_intron[0, :] > 0)
-    return gene_length, pos_intron
-
 def parse_transcript_gtf_to_introns(
     gtf,
     out_format='gtf',
@@ -40,9 +13,37 @@ def parse_transcript_gtf_to_introns(
     col_end=None,
     col_strand=None):
     '''
+    Parse GTF annotation (which only specifies exons) describing a single transcript into intron coordinates,
+    either as a GTF file or `pos_intron` NumPy array.
+
     Args
     - gtf: pandas.DataFrame
-        Follows the GTF file format
+        Either follows the GTF file format (see https://www.gencodegenes.org/pages/data_format.html) or
+        has column names given by the col_feature_type, col_start, col_end, and col_strand arguments.
+    - out_format: str. default='gtf'
+        See Returns.
+    - relative_coords: bool. default=False
+        Subtract the start coordinate (then add back 1 so that coordinates are 1-indexed) of the transcript
+        from all features
+    - relative_strand: bool. default=False
+        Requires relative_coords to be True.
+        If an intron is on the '-' strand, recompute the start and end coordinates relative to
+        the orientation of transcription.
+    - return_gene_length: bool. default=True
+        Return (gene_length, introns). See Returns.
+    - col_feature_type, col_start, col_end, col_strand: str. default=None
+        Column names for corresponding GTF columns. Specifying these arguments allows this function to be
+        used with pandas DataFrames whose columns are not ordered according to the GTF file format.
+
+    Returns
+    - gene_length: int
+        Only returned if return_gene_length is True.
+        Number of nucleotides of the transcript.
+    - introns: pd.DataFrame or np.ndarray
+        If out_format == 'gtf': output introns as a pandas DataFrame following the GTF format
+            Keeps the same additional annotations as the corresponding exons where appropriate
+        If out_format == 'pos_intron': coordinates (1-indexed) of introns as a NumPy array of shape=(2, n_introns)
+            If gene isoform is intronless, the output has shape (2, 0).
     '''
     assert out_format in ('gtf', 'pos_intron')
     col_feature_type = gtf.columns[2] if col_feature_type is None else col_feature_type
@@ -81,6 +82,7 @@ def parse_transcript_gtf_to_introns(
             introns_start = introns_start - start + 1
             introns_end = introns_end - start + 1
         if relative_strand and strand == '-':
+            assert relative_coords is True
             introns_start_new = gene_length - introns_end + 1
             introns_end = gene_length - introns_start + 1
             introns_start = introns_start_new
@@ -118,13 +120,31 @@ def parse_gtf_to_introns(
     col_additional=None,
     **kwargs):
     '''
+    Wrapper around parse_transcript_gtf_to_introns() to parse a GTF file describing multiple
+    transcripts into their intron coordinates.
+
     Args
     - gtf
         Coordinates are 1-indexed, inclusive.
         Note that all exons for a given transcript_id share identical annotation source,
         score, strand, phase, and additional information (except .str.replace('exon_number \d+; exon_id "[^"]+"; ', '', regex=True))
-    - regex_transcript_id: str. default=r'((?:ENMUST|ENST)\d+\.?\d*)'
-        Regular expression to match the transcript id
+    - regex_transcript_id: str. default=r'((?:ENSMUST|ENST)\d+\.?\d*)'
+        Regular expression to match a transcript id in the additional information column of a GTF file
+    - out_format: str. default='gtf'
+        'gtf' or 'pos_intron'. See parse_transcript_gtf_to_introns()
+    - col_feature_type, col_additional: str. default=None
+        Column names for corresponding GTF columns. See parse_transcript_gtf_to_introns().
+    - **kwargs
+        Keyword arguments passed to parse_transcript_gtf_to_introns()
+
+    Returns
+      If out_format == 'gtf': pd.DataFrame
+        Table of introns in GTF format, keeping the same additional annotations as the corresponding exons where appropriate
+      If out_format == 'pos_intron':
+        - gene_length: dict(str -> int)
+            Map transcript_id to gene length
+        - pos_introns: dict(str -> np.ndarray)
+            Map transcript_id to a pos_intron NumPy array describing intron coordinates
     '''
     col_feature_type = gtf.columns[2] if col_feature_type is None else col_feature_type
     col_additional = gtf.columns[8] if col_additional is None else col_additional
@@ -208,7 +228,7 @@ def mutually_exclusive_splicing(intervals):
         Can be a np.ndarray where rows are pairs: i.e., shape is (n_introns, 2)
 
     Returns
-    - A: np.ndarray, shape=(n_introns, n_introns), dtype=bool
+    - A: scipy.sparse.dok_array, shape=(n_introns, n_introns), dtype=bool
         Element i, j is True if splicing of intron i precludes splicing of intron j.
         Diagonal is 1. If `np.array_equal(A, np.eye(n_introns))` is True, then none of the introns
         are mutually exclusive.
