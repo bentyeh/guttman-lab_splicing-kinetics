@@ -113,3 +113,73 @@ def spliced_fraction(transcripts, t, stats=None, *, time_steps=None):
             stats[t] = np.nansum(transcripts[:, :-1] == -1, axis=0) / \
                        (np.nansum(transcripts[:, :-1] == -1, axis=0) + np.nansum(transcripts[:, :-1] > 1, axis=0))
     return stats
+
+def intron_exon_counts(transcripts, t, stats=None, *, time_steps=None, pos_exon=None, method='fractional'):
+    '''
+    Counts of introns and exons present in transcripts.
+    Assumes no alternative splicing (introns are non-overlapping).
+
+    Arg(s)
+    - transcripts: np.ndarray. shape=(<variable>, n_introns + 1). dtype=float
+        The current set of transcripts at time `t`.
+        - Each row represents a transcript
+        - Column i (i = 0, ..., n_introns - 1): whether intron i is
+          - np.nan: excluded due to splicing of a mutually exclusive intron
+          - -1: spliced
+          - >= 0: proportion of the intron currently transcribed and present
+            - > 0 indicates that the first intron nucleotide has been incorporated
+            - 1 indicates that the last nucleotide of the intron has been incorporated
+            - > 1 indicates that the intron is present and that elongation has exceeded the 5' splice site
+        - Column n_introns: position of the transcript, 1-indexed
+    - t: int
+        Current time step
+    - stats: np.ndarray. shape=(n_time_steps, n_introns, 2) or (n_time_steps,). default=None
+        Stores computed statistics. See returns.
+    - time_steps: list of int. default=None. len=n_time_steps
+        Time steps to include in return. If None, all time steps are included.
+    - pos_exon: np.ndarray. shape=(2, n_introns + 1)=(2, n_exons)
+        Required. Coordinates of exons, 1-indexed. If gene isoform is intronless, pos_exon has shape (2, 1).
+        See utils_genomics.pos_intron_to_pos_exon().
+    - method: str. default='fractional'
+        How to count partially-transcribed introns and exons
+            'any': increment count if any part of the feature is transcribed
+            'fractional': sum fractional counts
+            'full': increment count only if the entire feature has been transcribed
+
+    Returns
+    - stats: dict (int: np.ndarray)
+        Keys: time steps
+        Values: np.ndarray of shape=(n_introns + 1, 2)=(n_exons, 2), or int
+        - If an isoform has introns:
+            - stats[t][:, 0]: exon counts
+            - stats[t][:-1, 1]: intron counts
+            - stats[t][-1, 1] is always 0
+        - If an isoform has no introns: stats[t] is the count of transcripts at time step t
+    '''
+    assert pos_exon is not None
+    assert method in ('any', 'fractional', 'full')
+    n_introns = transcripts.shape[1] - 1
+    if stats is None:
+        stats = dict()
+    if time_steps is None or t in time_steps:
+        if n_introns == 0:
+            stats[t] = transcripts.shape[0]
+        else:
+            intron_counts = transcripts[:, :-1].copy()
+            if method == 'fractional':
+                intron_counts = np.minimum(1, np.maximum(0, intron_counts))
+                intron_counts = np.nansum(intron_counts, axis=0)
+                exon_lengths = pos_exon[1, :] - pos_exon[0, :] + 1
+                exon_counts = (transcripts[:, [-1]] - pos_exon[[0], :] + 1) / exon_lengths[np.newaxis,]
+                exon_counts = np.minimum(1, np.maximum(0, exon_counts))
+                exon_counts = np.sum(exon_counts, axis=0)
+            elif method == 'any':
+                intron_counts = np.nansum(intron_counts > 0, axis=0)
+                exon_counts = np.sum(transcripts[:, [-1]] - pos_exon[[0], :] >= 0, axis=0)
+            else: # method == 'full'
+                intron_counts = np.nansum(intron_counts >= 1, axis=0)
+                exon_counts = np.sum(transcripts[:, [-1]] - pos_exon[[1], :] >= 0, axis=0)
+            stats[t] = np.zeros((n_introns + 1, 2))
+            stats[t][:, 0] = exon_counts
+            stats[t][:-1, 1] = intron_counts
+    return stats
