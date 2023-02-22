@@ -28,7 +28,7 @@ def main(n, index):
         num=4,
         max_depth=5,
         tol=100,
-        args=('count_per_splice_site', data_time, data, pos_intron, gene_length),
+        args=('splice_site_counts', data_time, data, pos_intron, gene_length),
         kwargs=dict(n=n, kwargs=dict(use_tqdm=True, log10=True, use_pool=False)),
         use_pool=True, use_tqdm=True,
         callback=fitting.callback_iter,

@@ -24,7 +24,7 @@ def loss_sse(x, stats_fun, data_time, data, pos_intron, gene_length,
         Parameters
     - stats_fun: str or callable
         If str: name of statistics function for simulating data.
-            Current options: 'spliced_fraction' or 'count_per_splice_site'
+            Current options: 'spliced_fraction', 'splice_site_counts', or 'junction_counts'
         If callable: function for computing statistics from simulated transcripts.
             See stats_fun parameter of simulate.simulate_transcripts()
     - data_time. len=m

@@ -57,7 +57,7 @@ def main(n, index):
         pos_intron,
         gene_length,
         time_steps[-1],
-        stats_fun=stats_transcripts.count_per_splice_site,
+        stats_fun=stats_transcripts.splice_site_counts,
         aggfun=aggfun,
         alt_splicing=False,
         seed=0)

@@ -25,7 +25,7 @@ def main(n, index, n_calls=1000, n_initial_points=200):
     res = skopt.gp_minimize(
         lambda x: fitting.loss_sse(
             x,
-            'count_per_splice_site',
+            'splice_site_counts',
             data_time,
             data,
             pos_intron,

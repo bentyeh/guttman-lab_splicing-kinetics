@@ -29,14 +29,14 @@ def main(n, index):
     res = scipy.optimize.minimize(
         fitting.loss_sse,
         x0,
-        args=('count_per_splice_site', data_time, data, pos_intron, gene_length,
+        args=('splice_site_counts', data_time, data, pos_intron, gene_length,
               n, int(1e9), None, dict(log10=True, use_tqdm=True, use_pool=True)),
         method='L-BFGS-B',
         bounds=bounds,
         # options={'maxiter': 5, 'eps': 1e-1},
         callback=lambda xk: fitting.callback_scipy(
             xk,
-            'count_per_splice_site', data_time, data, pos_intron, gene_length,
+            'splice_site_counts', data_time, data, pos_intron, gene_length,
             log10=True,
             time_start=time_start,
             n=n,
