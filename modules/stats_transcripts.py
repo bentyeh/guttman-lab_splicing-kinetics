@@ -38,7 +38,7 @@ def count_per_splice_site(transcripts, t, stats=None, *, time_steps=None):
           - np.nan: excluded due to splicing of a mutually exclusive intron
           - -1: spliced
           - >= 0: proportion of the intron currently transcribed and present
-            - 0 indicates that the first intron nucleotide has been incorporated
+            - > 0 indicates that the first intron nucleotide has been incorporated
             - 1 indicates that the last nucleotide of the intron has been incorporated
             - > 1 indicates that the intron is present and that elongation has exceeded the 5' splice site
         - Column n_introns: position of the transcript, 1-indexed
@@ -83,7 +83,7 @@ def spliced_fraction(transcripts, t, stats=None, *, time_steps=None):
           - np.nan: excluded due to splicing of a mutually exclusive intron
           - -1: spliced
           - >= 0: proportion of the intron currently transcribed and present
-            - 0 indicates that the first intron nucleotide has been incorporated
+            - > 0 indicates that the first intron nucleotide has been incorporated
             - 1 indicates that the last nucleotide of the intron has been incorporated
             - > 1 indicates that the intron is present and that elongation has exceeded the 5' splice site
         - Column n_introns: position of the transcript, 1-indexed
