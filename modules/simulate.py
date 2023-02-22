@@ -269,6 +269,7 @@ def simulate_transcripts(
         n_transcripts = transcripts.shape[0]
         arange_transcripts = np.arange(n_transcripts)
 
+        # splicing
         mask_to_splice = (transcripts[:, :-1] > 1) & (rng.random(transcripts[:, :-1].shape) < k_splice)
         mask_to_splice = mask_to_splice.astype(float)
         if alt_splicing is not False:
