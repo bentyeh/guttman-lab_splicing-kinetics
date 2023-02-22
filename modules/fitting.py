@@ -1,3 +1,4 @@
+import collections
 import itertools
 import multiprocessing as mp
 import os
@@ -12,6 +13,12 @@ dir_project = os.path.split(os.path.split(os.path.realpath(__file__))[0])[0]
 sys.path.append(os.path.join(dir_project, 'modules'))
 import simulate
 import stats_transcripts
+
+loss_sse_args = collections.namedtuple(
+    'loss_sse_args',
+    ('stats_fun, data_time, data, pos_intron, gene_length, '
+     'n, bounds_error, bounds, kwargs'),
+    defaults=(20, int(1e9), None, None))
 
 def loss_sse(x, stats_fun, data_time, data, pos_intron, gene_length,
              n=20, bounds_error=int(1e9), bounds=None, kwargs=None):
