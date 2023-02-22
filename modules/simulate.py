@@ -5,60 +5,15 @@ Simulate transcription and splicing
 import itertools
 import multiprocessing as mp
 import os
+import sys
 import time
 
 import numpy as np
 from tqdm.auto import tqdm, trange
 
-def mutually_exclusive_splicing(intervals):
-    '''
-    Generate square matrix A indicating mutually exclusive splicing events:
-      A[i, j] indicates whether splicing of intron i precludes splicing of intron j.
-    
-    Note that A is not necessarily symmetric. This can occur if an intron is located
-    completely within another intron (i.e., start2 > start1 and end2 < end1):
-      ----------(intron1)----------------
-         ---(intron2)---
-    In this case, splicing intron1 precludes splicing of intron2, but not vice versa,
-    so A[1, 2] = 1 (True), but A[2, 1] = 0 (False).
-  
-    This implementation only checks if intron2 is located completely within intron1 but
-    is a bit simplistic. A more realistic implementation would check that intron2 is
-    located completely within intron1 by a margin on both ends such that the sequences
-    denoting the 5' and 3' splice sites of intron1 do not overlap intron2 at all.
-  
-    Arg(s)
-    - itervals: iterable of (start, end), len=n_introns
-        Coordinates of introns given by (start, end) where
-          - end >= start
-          - start and end are inclusive
-          - introns are sorted by start position
-        Can be a np.ndarray where rows are pairs: i.e., shape is (n_introns, 2)
-  
-    Returns
-    - A: np.ndarray, shape=(n_introns, n_introns), dtype=bool
-        Element i, j is True if splicing of intron i precludes splicing of intron j.
-        Diagonal is 1. If `np.array_equal(A, np.eye(n_introns))` is True, then none of the introns
-        are mutually exclusive.
-    '''
-    # check that introns are sorted by start position
-    start_positions = [interval[0] for interval in intervals]
-    assert np.all(start_positions[:-1] <= start_positions[1:])
-    # check that start and end positions are appropriately given as end >= start
-    assert all((end >= start for start, end in intervals))
-  
-    n_introns = len(intervals)
-    A = np.eye(n_introns, dtype=bool)
-    for i, j in itertools.combinations(range(n_introns), 2):
-        start1, end1 = intervals[i]
-        start2, end2 = intervals[j]
-        if start2 <= end1:
-            A[i, j] = 1
-            if end2 >= end1:
-                A[j, i] = 1
-        if start1 == start2:
-            A[j, i] = 1
-    return A
+dir_project = os.path.split(os.path.split(os.path.realpath(__file__))[0])[0]
+sys.path.append(os.path.join(dir_project, 'modules'))
+import utils_genomics
 
 def stats_raw(transcripts, t, stats=None, *, time_steps=None):
     '''
@@ -155,7 +110,7 @@ def simulate_transcripts(
           True: check for overlapping introns; only allow physically possible splicing combinations
           False: do not check for overlapping introns; assume all introns are spliced independently
           np.ndarray: square matrix such that element i, j denotes whether splicing of intron i
-            would preclude splicing of intron j. See mutually_exclusive_splicing()
+            would preclude splicing of intron j. See utils_genomics.mutually_exclusive_splicing()
       - rng: np.random.Generator. default=None
           Random number generator. If None, uses np.random.default_rng().
       - verbose: bool. default=True
@@ -186,7 +141,7 @@ def simulate_transcripts(
     arange_introns = np.arange(n_introns)
 
     if alt_splicing is True:
-        alt_splicing = mutually_exclusive_splicing(pos_intron.T)
+        alt_splicing = utils_genomics.mutually_exclusive_splicing(pos_intron.T)
     if isinstance(alt_splicing, np.ndarray):
         assert alt_splicing.dtype == bool
         if np.array_equal(alt_splicing, np.eye(n_introns, dtype=bool)):
@@ -194,7 +149,7 @@ def simulate_transcripts(
         else:
             # alt_splicing_nan: element i, j is np.nan if splicing of intron i precludes splicing of
             # intron j. Diagonal and all other elements have value 1.
-            alt_splicing_nan = alt_splicing.astype(float)
+            alt_splicing_nan = alt_splicing.astype(float).toarray(order='C') # store in row-major order
             alt_splicing_nan[alt_splicing_nan == 1] = np.nan
             alt_splicing_nan[np.diag_indices(n_introns)] = 1
             alt_splicing_nan[alt_splicing_nan == 0] = 1
