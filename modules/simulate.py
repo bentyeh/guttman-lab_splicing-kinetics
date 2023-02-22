@@ -141,7 +141,7 @@ def simulate_transcripts(
     arange_introns = np.arange(n_introns)
 
     if alt_splicing is True:
-        alt_splicing = utils_genomics.mutually_exclusive_splicing(pos_intron.T)
+        alt_splicing = utils_genomics.mutually_exclusive_splicing(pos_intron.T).toarray(order='C')
     if isinstance(alt_splicing, np.ndarray):
         assert alt_splicing.dtype == bool
         if np.array_equal(alt_splicing, np.eye(n_introns, dtype=bool)):
@@ -149,7 +149,7 @@ def simulate_transcripts(
         else:
             # alt_splicing_nan: element i, j is np.nan if splicing of intron i precludes splicing of
             # intron j. Diagonal and all other elements have value 1.
-            alt_splicing_nan = alt_splicing.astype(float).toarray(order='C') # store in row-major order
+            alt_splicing_nan = alt_splicing.astype(float)
             alt_splicing_nan[alt_splicing_nan == 1] = np.nan
             alt_splicing_nan[np.diag_indices(n_introns)] = 1
             alt_splicing_nan[alt_splicing_nan == 0] = 1
@@ -263,6 +263,12 @@ def simulate_transcripts(
         stats = stats_fun(transcripts, t, stats=stats, **stats_kwargs)
 
     return stats
+
+def mean(stats_all):
+    '''
+    Return mean taken over axis=0 (presumed to be parallel simulations)
+    '''
+    return np.mean(stats_all, axis=0)
 
 def mean_nan(stats_all):
     '''
