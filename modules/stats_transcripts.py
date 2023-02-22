@@ -26,7 +26,7 @@ def wrap_multiple_stats(*stat_funs):
         return stats
     return multiple_stats
 
-def count_per_splice_site(transcripts, t, stats=None, *, time_steps=None):
+def splice_site_counts(transcripts, t, stats=None, *, time_steps=None):
     '''
     Counts of each splice site.
 
@@ -114,7 +114,16 @@ def spliced_fraction(transcripts, t, stats=None, *, time_steps=None):
                        (np.nansum(transcripts[:, :-1] == -1, axis=0) + np.nansum(transcripts[:, :-1] > 1, axis=0))
     return stats
 
-def intron_exon_counts(transcripts, t, stats=None, *, time_steps=None, pos_exon=None, method='fractional'):
+def junction_counts(
+    transcripts,
+    t,
+    stats=None,
+    *,
+    time_steps=None,
+    method='fractional',
+    pos_exon=None,
+    pos_intron=None,
+    scale_by_length=False):
     '''
     Counts of introns and exons present in transcripts.
     Assumes no alternative splicing (introns are non-overlapping).
@@ -137,28 +146,38 @@ def intron_exon_counts(transcripts, t, stats=None, *, time_steps=None, pos_exon=
         Stores computed statistics. See returns.
     - time_steps: list of int. default=None. len=n_time_steps
         Time steps to include in return. If None, all time steps are included.
-    - pos_exon: np.ndarray. shape=(2, n_introns + 1)=(2, n_exons)
-        Required. Coordinates of exons, 1-indexed. If gene isoform is intronless, pos_exon has shape (2, 1).
-        See utils_genomics.pos_intron_to_pos_exon().
     - method: str. default='fractional'
         How to count partially-transcribed introns and exons
             'any': increment count if any part of the feature is transcribed
             'fractional': sum fractional counts
             'full': increment count only if the entire feature has been transcribed
+    - pos_exon: np.ndarray. shape=(2, n_introns + 1)=(2, n_exons)
+        Required. Coordinates of exons, 1-indexed. If gene isoform is intronless, pos_exon has shape (2, 1).
+        See utils_genomics.pos_intron_to_pos_exon().
+    - pos_intron: np.ndarray. shape=(2, n_introns)
+        Required if scale_by_length is True.
+        Coordinates of introns, 1-indexed. If gene isoform is intronless, pos_intron has shape (2, 0).
+    - scale_by_length: bool. default=False
+        Multiple intron and exon counts by their respective lengths.
 
     Returns
     - stats: dict (int: np.ndarray)
         Keys: time steps
-        Values: np.ndarray of shape=(n_introns + 1, 2)=(n_exons, 2), or int
+        Values: np.ndarray of shape=(n_introns + 1, 3)=(n_exons, 3), or int
         - If an isoform has introns:
             - stats[t][:, 0]: exon counts
             - stats[t][:-1, 1]: intron counts
-            - stats[t][-1, 1] is always 0
+            - stats[t][-1, [1, 2]] are always 0
+            - stats[t][:, 2]: spliced junction counts
         - If an isoform has no introns: stats[t] is the count of transcripts at time step t
     '''
     assert pos_exon is not None
     assert method in ('any', 'fractional', 'full')
+    if scale_by_length:
+        assert pos_intron is not None
+
     n_introns = transcripts.shape[1] - 1
+
     if stats is None:
         stats = dict()
     if time_steps is None or t in time_steps:
@@ -166,10 +185,10 @@ def intron_exon_counts(transcripts, t, stats=None, *, time_steps=None, pos_exon=
             stats[t] = transcripts.shape[0]
         else:
             intron_counts = transcripts[:, :-1].copy()
+            exon_lengths = pos_exon[1, :] - pos_exon[0, :] + 1
             if method == 'fractional':
                 intron_counts = np.minimum(1, np.maximum(0, intron_counts))
                 intron_counts = np.nansum(intron_counts, axis=0)
-                exon_lengths = pos_exon[1, :] - pos_exon[0, :] + 1
                 exon_counts = (transcripts[:, [-1]] - pos_exon[[0], :] + 1) / exon_lengths[np.newaxis,]
                 exon_counts = np.minimum(1, np.maximum(0, exon_counts))
                 exon_counts = np.sum(exon_counts, axis=0)
@@ -179,7 +198,13 @@ def intron_exon_counts(transcripts, t, stats=None, *, time_steps=None, pos_exon=
             else: # method == 'full'
                 intron_counts = np.nansum(intron_counts >= 1, axis=0)
                 exon_counts = np.sum(transcripts[:, [-1]] - pos_exon[[1], :] >= 0, axis=0)
-            stats[t] = np.zeros((n_introns + 1, 2))
+            if scale_by_length:
+                exon_counts *= exon_lengths
+                intron_lengths = pos_intron[1, :] - pos_intron[0, :] + 1
+                intron_counts *= intron_lengths
+            junction_counts = np.nansum(transcripts[:, :-1] == -1, axis=0)
+            stats[t] = np.zeros((n_introns + 1, 3))
             stats[t][:, 0] = exon_counts
             stats[t][:-1, 1] = intron_counts
+            stats[t][:-1, 2] = junction_counts
     return stats
