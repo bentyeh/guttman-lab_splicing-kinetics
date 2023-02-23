@@ -12,5 +12,7 @@
     "n": 100,
     "seed": null,
     "use_pool": true,
-    "use_tqdm": true
+    "use_tqdm": true,
+    "verbose": true
 }
+
