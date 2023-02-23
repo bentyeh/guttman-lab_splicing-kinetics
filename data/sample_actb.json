@@ -1,0 +1,17 @@
+{
+    "params": [1, 0.0005, 0.001, 50],
+    "log10": false,
+    "pos_intron": [[ 828, 1135, 1669, 2363, 2579],
+                   [ 952, 1229, 2122, 2449, 3537]],
+    "gene_length": 3640,
+    "n_time_steps": 1500,
+    "t_wash": 600,
+    "stats_fun": "junction_counts",
+    "aggfun": "mean",
+    "output_time_points": [600, 1200, 1500, 1800, 2100, 2400, 3300, 4200, 5100, 6000, 7800, 15000],
+    "n": 100,
+    "seed": null,
+    "use_pool": true,
+    "use_tqdm": true,
+    "verbose": true
+}
