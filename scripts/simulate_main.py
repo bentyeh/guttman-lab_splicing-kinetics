@@ -366,13 +366,15 @@ if __name__ == '__main__':
         '--seed',
         type=int,
         help='Seed to use for random number generation')
+    parser.add_argument('-v', dest='verbose', action='store_true', help='Verbose')
     parser.add_argument('-no_pool', dest='use_pool', action='store_false',
                         help='Do not use multiprocessing pool')
     parser.add_argument('-no_progress', dest='use_tqdm', action='store_false',
                         help='Do not show progress bars')
     args = parser.parse_args()
 
-    print(args)
+    if args.verbose:
+        print(args, file=sys.stderr)
     if args.stats_fun == 'stats_raw':
         assert args.aggfun == 'none'
     if args.aggfun == 'none':

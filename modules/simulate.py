@@ -132,7 +132,7 @@ def simulate_transcripts(
       - rng: np.random.Generator. default=None
           Random number generator. If None, uses np.random.default_rng().
       - verbose: bool. default=True
-          Print out status messages every 15 seconds.
+          Print status messages every 15 seconds to stderr.
     
     Returns
     - stats: <variable>
@@ -236,7 +236,7 @@ def simulate_transcripts(
             time_now = time.time()
             if time_now > time_start + 15:
                 time_start = time_now
-                print(dict(params=params, t=t, n_transcripts=n_transcripts))
+                print(dict(params=params, t=t, n_transcripts=n_transcripts), file=sys.stderr)
         # decay
         mask_decay = (transcripts[:, -1] == gene_length) & (rng.random(n_transcripts) < k_decay)
         transcripts = transcripts[~mask_decay, :]
