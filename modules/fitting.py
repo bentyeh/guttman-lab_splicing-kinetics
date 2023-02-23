@@ -51,7 +51,7 @@ def loss_sse(x, stats_fun, data_time, data, pos_intron, gene_length,
     - kwargs: dict. default=None
         Additional keyword arguments to pass to simulate.parallel_simulations()
         Defaults:
-        - stats_kwargs=dict(time_steps=data_time)
+        - stats_kwargs=dict(time_points=data_time)
         - aggfun=simulate.mean_nan
     
     Returns: float
@@ -60,7 +60,7 @@ def loss_sse(x, stats_fun, data_time, data, pos_intron, gene_length,
         stats_fun = getattr(stats_transcripts, stats_fun)
     assert callable(stats_fun)
     kwargs_default = dict(
-        stats_kwargs=dict(time_steps=data_time),
+        stats_kwargs=dict(time_points=data_time),
         aggfun=simulate.mean_nan)
     if kwargs is None:
         kwargs = dict()

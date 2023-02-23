@@ -15,7 +15,7 @@ dir_project = os.path.split(os.path.split(os.path.realpath(__file__))[0])[0]
 sys.path.append(os.path.join(dir_project, 'modules'))
 import utils_genomics
 
-def stats_raw(transcripts, t, stats=None, *, time_steps=None):
+def stats_raw(transcripts, t, stats=None, *, time_points=None):
     '''
     Return all transcripts at requested time points.
 
@@ -32,17 +32,17 @@ def stats_raw(transcripts, t, stats=None, *, time_steps=None):
         Current time step
     - stats: dict from int to np.ndarray. default=None
         Stores computed statistics. See Returns.
-    - time_steps: list of int. default=None
-        Time steps to include in return. If None, all time steps are included.
+    - time_points: list of int. default=None
+        Time points to include in return. If None, all time steps are included.
 
     Returns
     - stats: dict (int: np.ndarray)
-        Keys: time steps
+        Keys: time points
         Values: `transcripts` at time t
     '''
     if stats is None:
         stats = dict()
-    if time_steps is None or t in time_steps:
+    if time_points is None or t in time_points:
         stats[t] = transcripts
     return stats
 
@@ -60,9 +60,27 @@ def simulate_transcripts(
     - Transcription initiation is random (i.e., not bursting).
     - Elongation rate is constant over the entire length of the gene.
     - Splicing rate is constant for all introns.
-      - This assumption can be avoided by separately simulating transcripts using 1 intron annotation at a time.
+      - To allow different splicing rates for different introns, separately simulate transcripts
+        using 1 intron annotation at a time.
     - Splicing only occurs after transcription of the nucleotide past the 3' splice site.
     - Decay only occurs for fully-elongated transcripts.
+    - The first explicitly simulated time step corresponds to time point t=1 immediately after
+      transcription labeling reagent is added.
+       - Think of the order of events during a time step as follows:
+           measure[, label/wash], decay, splice, elongate, initiate
+       - At the start of the t=0 time step, a measurement is taken, revealing no labeled transcripts.
+         (This t=0 measurement is not explicitly simulated; the output of the simulation starts at t=1.)
+         Transcription labeling reagent is then added and incorporated into existing elongating transcripts,
+         and we observe these labeled transcripts starting at the t=1 time step.
+       - During the t=t_wash time step, labeling reagent is removed, so it appears as if no initiation
+         occurs during and after the t=t_wash time step.
+    
+    Notes
+    - "Time point" refers to a specific time value in the simulation.
+        `time_points` usually is an array of the observed time points, which has length `n_time_points`.
+    - "Time step" refers to the time unit for the simulation. The simulation runs for `n_time_steps`.
+        `time_steps` is generally taken to mean `np.arange(n_time_steps)`, where `n_time_steps` is often
+        time_points[-1]
 
     Arg(s)
     - Model parameters
@@ -78,11 +96,11 @@ def simulate_transcripts(
       - gene_length: int
           Number of nucleotides from transcription start site to transcription end site
       - t_wash: int. default=600
-          Time at which transcription initiation stops
+          Time point at which transcription initiation stops
       - n_time_steps: int
           Number of time steps
     - Simulation parameters
-      - stats_fun: callable. default=count_per_intron
+      - stats_fun: callable. default=stats_raw
         - Computes statistics from the simulated transcripts.
         - Called at each time step in the simulation. Must initiate the output variable `stats` the
           first time the function is called.
@@ -100,10 +118,10 @@ def simulate_transcripts(
               - Column n_introns: position of the transcript, 1-indexed
           - t: int
               Current time step
-          - stats: <variable>. Usually a dict (time step (int): statistics (np.ndarray))
+          - stats: <variable>. Usually a dict (time point (int): statistics (np.ndarray))
               Stores computed statistics.
       - stats_kwargs: dict. default=None
-        - Additional keyword arguments to stats_fun.
+          Additional keyword arguments to stats_fun.
       - log10: bool, default=False
           Whether parameters are given as log10-transformed values
       - alt_splicing: bool, or np.ndarray of shape (n_introns, n_introns). default=True
@@ -128,6 +146,7 @@ def simulate_transcripts(
     assert k_decay >= 0 and k_decay < 1
     assert k_elong >= 0 and k_init >=0
     assert gene_length > 0
+    assert isinstance(alt_splicing, bool) or isinstance(alt_splicing, np.ndarray)
 
     if rng is None:
         rng = np.random.default_rng()
@@ -198,7 +217,7 @@ def simulate_transcripts(
     transcripts[:, :-1][np.isnan(mask_to_splice)] = np.nan
 
     # initialize counts of unspliced and spliced introns
-    stats = stats_fun(transcripts, t=0, stats=None, **stats_kwargs)
+    stats = stats_fun(transcripts, t=1, stats=None, **stats_kwargs)
     
     if verbose:
         time_start = time.time()
@@ -212,7 +231,7 @@ def simulate_transcripts(
         # # see https://stackoverflow.com/a/3393759
 
     # simulation over time
-    for t in range(1, n_time_steps):
+    for t in range(2, n_time_steps + 1):
         if verbose and t % 10 == 0:
             time_now = time.time()
             if time_now > time_start + 15:
@@ -255,6 +274,10 @@ def simulate_transcripts(
                                                         n_new_transcripts) + 1
                 transcripts = np.append(transcripts, new_transcripts, axis=0)
                 n_transcripts = transcripts.shape[0]
+
+        # update the values for the proportions of introns currently transcribed and present
+        # given new positions of elongated transcripts and the positions of newly initiated
+        # transcripts
         transcripts[:, :-1][transcripts[:, :-1] >= 0] = np.maximum(
             (transcripts[:, [-1]] - pos_intron[[0], :] + 1) / intron_lengths[np.newaxis,],
             0)[transcripts[:, :-1] >= 0]
@@ -319,11 +342,11 @@ def parallel_simulations(
         Aggregation function over multiple simulations.
         - If None, returns a list of all simulations.
         - Otherwise, must have definition <aggfun>(stats_all) where `stats_all` is a NumPy array of shape:
-          - (n, time_point) if `stats_fun` returns a scalar value at each time point
-          - (n, time_point, *(shape)) if `stats_fun` returns a NumPy array of shape `(shape)` at each time point.
-          - Example: stats_transcripts.count_per_splice_site returns an array of shape (n_introns, 3) at each time
-            point, so the final output over 1 simulation is (time_point, n_introns, 3). Over `n` simulations, the shape
-            becomes (n, time_point, n_introns, 3).
+          - (n, n_time_points) if `stats_fun` returns a scalar value at each time point
+          - (n, n_time_points, *(shape)) if `stats_fun` returns a NumPy array of shape `(shape)` at each time point.
+          - Example: stats_transcripts.splice_site_counts returns an array of shape (n_introns, 3) at each time
+            point, so the final output over 1 simulation is (n_time_points, n_introns, 3). Over `n` simulations, the shape
+            becomes (n, n_time_points, n_introns, 3).
     - **kwargs: keyword arguments passed to `simulate_transcripts()`
       - Assumes that `stats_fun` returns a dict (int: np.ndarray) mapping from time point to computed statistics
       - Note that the "rng" key in kwargs is ignored, since it is assumed that each parallel run should have a different
@@ -334,6 +357,26 @@ def parallel_simulations(
         Time points
     - <variable>
         The result of calling `aggfun` on a stack of outputs from each simulation.
+        
+        Common scenarios, using the following notation:
+        - list[n] = list of length n
+        - dict[t] = dictionary with t=n_time_points keys
+        - ? = a variable value (i.e., cannot be determined a priori)
+
+            | aggfun | stats_fun          | n_introns | output data type                                  |
+            |--------|--------------------|-----------|---------------------------------------------------|
+            | None   | stats_raw          | n_introns | list[n](dict[t](int: np.ndarray[?, n_introns+1])) |
+            | None   | junction_counts    | n_introns | list[n](dict[t](int: np.ndarray[n_introns+1, 3])) |
+            | None   | spliced_fraction   | 1+        | list[n](dict[t](int: np.ndarray[n_introns,]))     |
+            | None   | spliced_fraction   | 0         | list[n](dict[t](int: 1))                          |
+            | None   | splice_site_counts | 1+        | list[n](dict[t](int: np.ndarray[n_introns, 3]))   |
+            | None   | splice_site_counts | 0         | list[n](dict[t](int: int))                        |
+            | mean   | stats_raw          | n/a       | n/a                                               |
+            | mean   | junction_counts    | n_introns | np.ndarray[t, n_introns+1, 3]                     |
+            | mean   | spliced_fraction   | 1+        | np.ndarray[t, n_introns]                          |
+            | mean   | spliced_fraction   | 0         | np.ones(t)                                        |
+            | mean   | splice_site_counts | 1+        | np.ndarray[t, n_introns, 3]                       |
+            | mean   | splice_site_counts | 0         | np.ndarray[t]                                     |
     '''
     kwargs = kwargs.copy()
     if use_pool:

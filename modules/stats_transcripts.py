@@ -26,7 +26,7 @@ def wrap_multiple_stats(*stat_funs):
         return stats
     return multiple_stats
 
-def splice_site_counts(transcripts, t, stats=None, *, time_steps=None):
+def splice_site_counts(transcripts, t, stats=None, *, time_points=None):
     '''
     Counts of each splice site.
 
@@ -44,25 +44,25 @@ def splice_site_counts(transcripts, t, stats=None, *, time_steps=None):
         - Column n_introns: position of the transcript, 1-indexed
     - t: int
         Current time step
-    - stats: np.ndarray. shape=(n_time_steps, n_introns, 2) or (n_time_steps,). default=None
+    - stats: np.ndarray. shape=(n_time_points, n_introns, 2) or (n_time_points,). default=None
         Stores computed statistics. See returns.
-    - time_steps: list of int. default=None. len=n_time_steps
-        Time steps to include in return. If None, all time steps are included.
+    - time_points: list of int. default=None. len=n_time_points
+        Time points to include in return. If None, all time steps are included.
     
     Returns
     - stats: dict (int: np.ndarray)
-        Keys: time steps
+        Keys: time points
         Values: np.ndarray of shape=(n_introns, 3), or int
         - If an isoform has introns:
-          - stats[t][i, 0]: count of transcripts at time step t that contain donor bond of intron i
-          - stats[t][i, 1]: count of transcripts at time step t that contain acceptor bond of intron i
-          - stats[t][i, 2]: count of transcripts at time step t that have spliced intron i
-        - If an isoform has no introns: stats[t] is the count of transcripts at time step t
+          - stats[t][i, 0]: count of transcripts at time point t that contain donor bond of intron i
+          - stats[t][i, 1]: count of transcripts at time point t that contain acceptor bond of intron i
+          - stats[t][i, 2]: count of transcripts at time point t that have spliced intron i
+        - If an isoform has no introns: stats[t] is the count of transcripts at time point t
     '''
     n_introns = transcripts.shape[1] - 1
     if stats is None:
         stats = dict()
-    if time_steps is None or t in time_steps:
+    if time_points is None or t in time_points:
         if n_introns == 0:
             stats[t] = transcripts.shape[0]
         else:
@@ -71,7 +71,7 @@ def splice_site_counts(transcripts, t, stats=None, *, time_steps=None):
                                   np.nansum(transcripts[:, :-1] == -1, axis=0))).T
     return stats
 
-def spliced_fraction(transcripts, t, stats=None, *, time_steps=None):
+def spliced_fraction(transcripts, t, stats=None, *, time_points=None):
     '''
     Ratio of spliced to (spliced + unspliced) transcripts for each intron.
 
@@ -89,14 +89,14 @@ def spliced_fraction(transcripts, t, stats=None, *, time_steps=None):
         - Column n_introns: position of the transcript, 1-indexed
     - t: int
         Current time step
-    - stats: np.ndarray. shape=(n_time_steps, n_introns, 2) or (n_time_steps,). default=None
+    - stats: np.ndarray. shape=(n_time_points, n_introns, 2) or (n_time_points,). default=None
         Stores computed statistics. See returns.
-    - time_steps: list of int. default=None. len=n_time_steps
-        Time steps to include in return. If None, all time steps are included.
+    - time_points: list of int. default=None. len=n_time_points
+        Time points to include in return. If None, all time steps are included.
 
     Returns
     - stats: dict (int: np.ndarray)
-        Keys: time steps
+        Keys: time points
         Values: np.ndarray of shape=(n_introns,), or int(1)
         - For a given intron, a transcript can be considered unspliced only if the 3' splice site has been transcribed.
         - Transcripts that have not been elongated past their 3' splice site, or for which the given intron is not
@@ -106,7 +106,7 @@ def spliced_fraction(transcripts, t, stats=None, *, time_steps=None):
     n_introns = transcripts.shape[1] - 1
     if stats is None:
         stats = dict()
-    if time_steps is None or t in time_steps:
+    if time_points is None or t in time_points:
         if n_introns == 0:
             stats[t] = 1
         else:
@@ -119,13 +119,13 @@ def junction_counts(
     t,
     stats=None,
     *,
-    time_steps=None,
+    time_points=None,
     method='fractional',
     pos_exon=None,
     pos_intron=None,
     scale_by_length=False):
     '''
-    Counts of introns and exons present in transcripts.
+    Counts of introns, exons, and spliced junctions present in transcripts.
     Assumes no alternative splicing (introns are non-overlapping).
 
     Arg(s)
@@ -142,10 +142,10 @@ def junction_counts(
         - Column n_introns: position of the transcript, 1-indexed
     - t: int
         Current time step
-    - stats: np.ndarray. shape=(n_time_steps, n_introns, 2) or (n_time_steps,). default=None
+    - stats: np.ndarray. shape=(n_time_points, n_introns, 2) or (n_time_points,). default=None
         Stores computed statistics. See returns.
-    - time_steps: list of int. default=None. len=n_time_steps
-        Time steps to include in return. If None, all time steps are included.
+    - time_points: list of int. default=None. len=n_time_points
+        Time points to include in return. If None, all time steps are included.
     - method: str. default='fractional'
         How to count partially-transcribed introns and exons
             'any': increment count if any part of the feature is transcribed
@@ -162,14 +162,12 @@ def junction_counts(
 
     Returns
     - stats: dict (int: np.ndarray)
-        Keys: time steps
+        Keys: time points
         Values: np.ndarray of shape=(n_introns + 1, 3)=(n_exons, 3), or int
-        - If an isoform has introns:
-            - stats[t][:, 0]: exon counts
-            - stats[t][:-1, 1]: intron counts
-            - stats[t][-1, [1, 2]] are always 0
-            - stats[t][:, 2]: spliced junction counts
-        - If an isoform has no introns: stats[t] is the count of transcripts at time step t
+        - stats[t][:, 0]: exon counts
+        - stats[t][:-1, 1]: intron counts
+        - stats[t][-1, [1, 2]] are always 0
+        - stats[t][:, 2]: spliced junction counts
     '''
     assert pos_exon is not None
     assert method in ('any', 'fractional', 'full')
@@ -180,31 +178,37 @@ def junction_counts(
 
     if stats is None:
         stats = dict()
-    if time_steps is None or t in time_steps:
-        if n_introns == 0:
-            stats[t] = transcripts.shape[0]
-        else:
-            intron_counts = transcripts[:, :-1].copy()
-            exon_lengths = pos_exon[1, :] - pos_exon[0, :] + 1
-            if method == 'fractional':
-                intron_counts = np.minimum(1, np.maximum(0, intron_counts))
-                intron_counts = np.nansum(intron_counts, axis=0)
-                exon_counts = (transcripts[:, [-1]] - pos_exon[[0], :] + 1) / exon_lengths[np.newaxis,]
-                exon_counts = np.minimum(1, np.maximum(0, exon_counts))
-                exon_counts = np.sum(exon_counts, axis=0)
-            elif method == 'any':
-                intron_counts = np.nansum(intron_counts > 0, axis=0)
-                exon_counts = np.sum(transcripts[:, [-1]] - pos_exon[[0], :] >= 0, axis=0)
-            else: # method == 'full'
-                intron_counts = np.nansum(intron_counts >= 1, axis=0)
-                exon_counts = np.sum(transcripts[:, [-1]] - pos_exon[[1], :] >= 0, axis=0)
-            if scale_by_length:
-                exon_counts *= exon_lengths
-                intron_lengths = pos_intron[1, :] - pos_intron[0, :] + 1
-                intron_counts *= intron_lengths
-            junction_counts = np.nansum(transcripts[:, :-1] == -1, axis=0)
-            stats[t] = np.zeros((n_introns + 1, 3))
-            stats[t][:, 0] = exon_counts
-            stats[t][:-1, 1] = intron_counts
-            stats[t][:-1, 2] = junction_counts
+    if time_points is None or t in time_points:
+        intron_counts = transcripts[:, :-1].copy()
+        exon_lengths = pos_exon[1, :] - pos_exon[0, :] + 1
+        if method == 'fractional':
+            intron_counts = np.minimum(1, np.maximum(0, intron_counts))
+            intron_counts = np.nansum(intron_counts, axis=0)
+            exon_counts = (transcripts[:, [-1]] - pos_exon[[0], :] + 1) / exon_lengths[np.newaxis,]
+            exon_counts = np.minimum(1, np.maximum(0, exon_counts))
+            exon_counts = np.sum(exon_counts, axis=0)
+        elif method == 'any':
+            intron_counts = np.nansum(intron_counts > 0, axis=0)
+            exon_counts = np.sum(transcripts[:, [-1]] - pos_exon[[0], :] >= 0, axis=0)
+        else: # method == 'full'
+            intron_counts = np.nansum(intron_counts >= 1, axis=0)
+            exon_counts = np.sum(transcripts[:, [-1]] - pos_exon[[1], :] >= 0, axis=0)
+        if scale_by_length:
+            exon_counts *= exon_lengths
+            intron_lengths = pos_intron[1, :] - pos_intron[0, :] + 1
+
+            # Explicit multiplication rather than in-place operation (intron_counts *= intron_lengths)
+            # helps avoid potential typecasting error. This can occur with the following inputs:
+            # - method == 'any' or 'full' such that intron_counts has dtype int64 at this point
+            # - pos_intron has dtype float (or any dtype that is not int64) such that intron_lengths
+            #     has dtype float (or any dtype that is not int64)
+            # 
+            # https://github.com/numpy/numpy/pull/6499/files
+            # https://stackoverflow.com/questions/38673531/numpy-cannot-cast-ufunc-multiply-output-from-dtype
+            intron_counts = intron_counts * intron_lengths
+        junction_counts = np.nansum(transcripts[:, :-1] == -1, axis=0)
+        stats[t] = np.zeros((n_introns + 1, 3))
+        stats[t][:, 0] = exon_counts
+        stats[t][:-1, 1] = intron_counts
+        stats[t][:-1, 2] = junction_counts
     return stats
