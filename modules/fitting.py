@@ -383,6 +383,7 @@ def main(
         Takes highest precedent (can supersede sim_kwargs, and for 'scipy' and 'igs', loss_kwargs).
     - loss_kwargs: dict. default=None
         Additional keyword arguments to pass to loss function, besides sim_kwargs.
+        Takes precedence over sim_kwargs.
     - sim_kwargs: dict. default=None
         Additional keyword arguments to pass to simulation function (simulate.parallel_simulations)
     - file_res: str. default=None
@@ -422,7 +423,8 @@ def main(
     sim_kwargs_default = dict(
         log10=True,
         use_tqdm=True,
-        use_pool=True,
+        # for igs, default to using pool over grid search rather than multiple simulations
+        use_pool=True if fitting_method in ('gp', 'scipy') else False,
         alt_splicing=False,
         stats_kwargs=dict(time_points=time_points))
     if stats_fun == 'junction_counts':
@@ -436,8 +438,7 @@ def main(
         pos_intron=pos_intron,
         gene_length=gene_length,
         n=n,
-        sim_kwargs=sim_kwargs_default,
-        **loss_kwargs)
+        sim_kwargs=sim_kwargs_default)._replace(**loss_kwargs)
 
     if fitting_method == 'gp':
         skopt_kwargs = dict(
@@ -479,13 +480,11 @@ def main(
             'junction_counts': 100,
             'splice_site_counts': 100,
             'spliced_fraction': 1e-4}[stats_fun]
-        loss_args_dict = loss_args_instance._asdict()
-        loss_args_dict['sim_kwargs']['use_pool'] = False
         igs_kwargs = dict(
             num=4,
             max_depth=5,
             tol=tol,
-            args=loss_args(**loss_args_dict),
+            args=loss_args_instance,
             use_pool=True,
             use_tqdm=True,
             callback=callback_iter,
