@@ -79,16 +79,20 @@ def simulate_transcripts(
     - "Time point" refers to a specific time value in the simulation.
         `time_points` usually is an array of the observed time points, which has length `n_time_points`.
     - "Time step" refers to the time unit for the simulation. The simulation runs for `n_time_steps`.
-        `time_steps` is generally taken to mean `np.arange(n_time_steps)`, where `n_time_steps` is often
+        `time_steps` is generally taken to mean `np.arange(1, n_time_steps + 1)`, where `n_time_steps` is often
         time_points[-1]
 
     Arg(s)
     - Model parameters
       - params: np.ndarray. shape=(4,). dtype=float
         - k_init: Production rate (transcripts / time)
-        - k_decay: Decay rate (1 / time), must be between 0 and 1
-        - k_splice: Splicing rate (1 / time), must be between 0 and 1.
-            Assumed to be constant for different splice junctions in the same gene
+        - k_decay: Decay rate (1 / time)
+            Converted in the simulation to probability of decay in a given time step as
+              p_decay = 1 - exp(-k_decay)
+        - k_splice: Splicing rate (1 / time)
+            Assumed to be constant for different splice junctions in the same gene.
+            Converted in the simulation to probability of splicing a full intron in a given time step as
+              p_splice = 1 - exp(-k_splice)
         - k_elong: Elongation velocity (nucleotides / time)
     - Experiment parameters
       - pos_intron: np.ndarray. shape=(2, n_introns)
@@ -142,11 +146,12 @@ def simulate_transcripts(
     if log10:
         params = np.power(10, params)
     k_init, k_decay, k_splice, k_elong = params
-    assert k_splice >= 0 and k_splice < 1
-    assert k_decay >= 0 and k_decay < 1
     assert k_elong >= 0 and k_init >=0
     assert gene_length > 0
     assert isinstance(alt_splicing, bool) or isinstance(alt_splicing, np.ndarray)
+
+    p_decay = 1 - np.exp(-k_decay)
+    p_splice = 1 - np.exp(-k_splice)
 
     if rng is None:
         rng = np.random.default_rng()
@@ -184,7 +189,7 @@ def simulate_transcripts(
     transcripts[:, :-1] = np.maximum((transcripts[:, [-1]] - pos_intron[[0], :] + 1) / intron_lengths[np.newaxis,], 0)
     
     # -- splice initial transcripts --
-    log_prob_unspliced = np.log(1 - k_splice) * ((transcripts[:, [-1]] - pos_intron[1, :]) / k_elong)
+    log_prob_unspliced = np.log(1 - p_splice) * ((transcripts[:, [-1]] - pos_intron[1, :]) / k_elong)
     # `mask_to_splice`: array of shape (n_transcripts, n_introns)
     #    value of 1 denotes introns to splice
     #    value of np.nan denotes excluded intron
@@ -238,13 +243,13 @@ def simulate_transcripts(
                 time_start = time_now
                 print(dict(params=params, t=t, n_transcripts=n_transcripts), file=sys.stderr)
         # decay
-        mask_decay = (transcripts[:, -1] == gene_length) & (rng.random(n_transcripts) < k_decay)
+        mask_decay = (transcripts[:, -1] == gene_length) & (rng.random(n_transcripts) < p_decay)
         transcripts = transcripts[~mask_decay, :]
         n_transcripts = transcripts.shape[0]
         arange_transcripts = np.arange(n_transcripts)
 
         # splicing
-        mask_to_splice = (transcripts[:, :-1] > 1) & (rng.random(transcripts[:, :-1].shape) < k_splice)
+        mask_to_splice = (transcripts[:, :-1] > 1) & (rng.random(transcripts[:, :-1].shape) < p_splice)
         mask_to_splice = mask_to_splice.astype(float)
         if alt_splicing is not False:
             splice_order = rng.permuted(np.repeat(arange_introns.reshape(1, -1), n_transcripts, axis=0), axis=1).T
