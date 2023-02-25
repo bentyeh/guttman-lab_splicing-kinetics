@@ -1,8 +1,10 @@
 import numpy as np
 
-def wrap_multiple_stats(*stat_funs):
+def multi_stats_callable(*stat_funs):
     '''
     Create callable that wraps multiple stats functions together.
+    Note that because the callable is not pickleable, this is not compatible
+    with multiprocessing pools.
 
     Arg(s)
     - *stat_funs: one or more stats functions with definition <stat_fun>(transcripts, t, stats=None, *, ...)
@@ -13,18 +15,84 @@ def wrap_multiple_stats(*stat_funs):
         - stats: dict (str: <variable>)
           - Keys are the names of the stats functions
           - Values are the return values of the stats functions
+
+    Example usage:
+        pos_exon = utils_genomics.pos_intron_to_pos_exon(pos_intron, gene_length)
+        simulate.simulate_transcripts(
+            params, pos_intron, gene_length, n_time_steps, t_wash=600,
+            stats_fun=stats_transcripts.wrap_multiple_stats(
+                stats_transcripts.splice_site_counts,
+                stats_transcripts.spliced_fraction,
+                stats_transcripts.junction_counts),
+            stats_kwargs={'stat_kwargs': {'junction_counts': {'pos_exon': pos_exon}}})
     '''
     stat_funs_names = [stat_fun.__name__ for stat_fun in stat_funs]
     def multiple_stats(transcripts, t, stats=None, *, stat_kwargs=None):
         if stat_kwargs is None:
-            stat_kwargs = {name: dict() for name in stat_funs_names}
+            stat_kwargs = dict()
         if stats is None:
             stats = {name: dict() for name in stat_funs_names}
         for stat_fun in stat_funs:
             name = stat_fun.__name__
+            if name not in stat_kwargs:
+                stat_kwargs[name] = dict()
             stats[name] = stat_fun(transcripts, t, stats=stats[name], **stat_kwargs[name])
         return stats
     return multiple_stats
+
+def multi_stats(transcripts, t, stats=None, stats_kwargs=None):
+    '''
+    Call multiple stats functions.
+
+    Arg(s)
+    - transcripts: np.ndarray. shape=(<variable>, n_introns + 1). dtype=float
+        The current set of transcripts at time `t`.
+        - Each row represents a transcript
+        - Column i (i = 0, ..., n_introns - 1): whether intron i is
+          - np.nan: excluded due to splicing of a mutually exclusive intron
+          - -1: spliced
+          - >= 0: proportion of the intron currently transcribed and present
+            - > 0 indicates that the first intron nucleotide has been incorporated
+            - 1 indicates that the last nucleotide of the intron has been incorporated
+            - > 1 indicates that the intron is present and that elongation has exceeded the 5' splice site
+        - Column n_introns: position of the transcript, 1-indexed
+    - t: int
+        Current time step
+    - stats: np.ndarray. shape=(n_time_points, n_introns, 2) or (n_time_points,). default=None
+        Stores computed statistics. See returns.
+    - stats_kwargs: dict (<str or callable>: dict (str: <variable>))
+        - Keys specify which stats functions to call. Keys can be either be names (str) of stats functions
+          or callables themselves.
+        - Values are dictionaries of keyword-argument pairs for those stats functions.
+          A value of None means to use the default arguments for the corresponding stat function.
+
+    Returns
+    - stats: dict (function name (str): dict (time point (int): computed statistics (np.ndarray)))
+        Keys are the names of the stats functions.
+        Values are the return values of the stats functions.
+
+    Example usage:
+        pos_exon = utils_genomics.pos_intron_to_pos_exon(pos_intron, gene_length)
+        simulate.simulate_transcripts(
+            params, pos_intron, gene_length, n_time_steps, t_wash=600,
+            stats_fun=stats_transcripts.multi_stats,
+            stats_kwargs={'stats_kwargs': {
+                'junction_counts': {'pos_exon': pos_exon},
+                'spliced_fraction': None,
+                'splice_site_counts': None}})
+    '''
+    assert stats_kwargs is not None and len(stats_kwargs) > 0
+    if stats is None:
+        stats = dict()
+    for stat_fun, stat_kwargs in stats_kwargs.items():
+        stat_fun_callable = globals()[stat_fun] if type(stat_fun) == str else stat_fun
+        stat_fun_name = stat_fun_callable.__name__
+        if stat_kwargs is None:
+            stat_kwargs = dict()
+        if stat_fun_name not in stats:
+            stats[stat_fun_name] = None
+        stats[stat_fun_name] = stat_fun_callable(transcripts, t, stats[stat_fun_name], **stat_kwargs)
+    return stats
 
 def splice_site_counts(transcripts, t, stats=None, *, time_points=None):
     '''

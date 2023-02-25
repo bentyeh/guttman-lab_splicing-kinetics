@@ -325,7 +325,7 @@ def parallel_simulations(
         Positional arguments passed to `simulate_transcripts()`
     - multi_stats: bool. default=False
       - True: `stats` returned from each simulation is assumed to be of the form returned by
-        stats_transcripts.wrap_wrap_multiple_stats():
+        stats_transcripts.multi_stats() or stats_transcripts.multi_stats_callable():
           dict (function name (str): dict (time point (int): computed statistics (np.ndarray)))
       - False: `stats` returned from each simulation is assumed to be of the form
           dict (time point (int): computed statistics (np.ndarray))
@@ -391,7 +391,7 @@ def parallel_simulations(
                 n_cpus = os.cpu_count()
     if use_pool and n_cpus > 1 and n > 1:
         results = []
-        with mp.Pool(n_cpus) as p:
+        with mp.Pool(min(n_cpus, n)) as p:
             for i in range(n):
                 kwargs['rng'] = np.random.default_rng(seed + i) if isinstance(seed, int) else None
                 results.append(
