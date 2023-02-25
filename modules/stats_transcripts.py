@@ -170,6 +170,10 @@ def spliced_fraction(transcripts, t, stats=None, *, time_points=None):
         - Transcripts that have not been elongated past their 3' splice site, or for which the given intron is not
           "spliceable" (due to splicing of a mutually exclusive intron) are not counted in this statistic.
         - Isoforms with no introns have value `int(1)`.
+
+    Note: spliced_fraction gives strictly equal or less information than splice_site_counts.
+      spliced_fraction can be calculated as follows from the output (ssc) of splice_site_counts:
+        ssc[:, 2] / ssc[:, [1, 2]].sum(axis=1)
     '''
     n_introns = transcripts.shape[1] - 1
     if stats is None:
