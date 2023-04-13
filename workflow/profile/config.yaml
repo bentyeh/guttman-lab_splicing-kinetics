@@ -1,0 +1,24 @@
+# See EMBL blog posts
+# https://www.embl.org/groups/bioinformatics-rome/blog/2022/04/snakemake-profile-3-cluster-submission-defining-parameters/
+# https://www.embl.org/groups/bioinformatics-rome/blog/2022/04/snakemake-profile-4-defining-resources-and-threads/
+cores: 1
+jobs: 12
+show-failed-logs: True
+keep-going: True
+printshellcmds: True
+rerun-incomplete: True
+use-conda: True
+conda-frontend: "conda"
+# Cluster submission
+jobname: "{rule}.{name}.{jobid}"
+cluster-cancel: "scancel"
+default-resources:
+  - cpus_per_task=1
+  - mem_mb=4000
+  - runtime=60
+  - tmpdir='/central/scratch/btyeh'
+set-resources:
+  - align_pass1:cpus_per_task=20
+  - align_pass2:cpus_per_task=20
+  - filter_align:cpus_per_task=5
+  - filter_align_check_identical2:cpus_per_task=5

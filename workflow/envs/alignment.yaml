@@ -1,0 +1,9 @@
+name: alignment
+channels:
+  - defaults
+  - anaconda
+  - bioconda
+dependencies:
+  - fastqc=0.12.1
+  - star=2.7.10b
+  - trimmomatic=0.39

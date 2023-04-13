@@ -1,0 +1,408 @@
+# Snakemake appears to import the following Python Standard Library modules by default:
+# re, os, sys, signal, json, urllib, copy, subprocess
+import glob
+import json
+import os
+
+##############################################################################
+# Initialize settings
+##############################################################################
+
+# keys required to be specified in config.yaml
+# - dir_fastqs
+# - dir_report
+# - dir_workup
+# - json_samples
+# - path_adapters
+# - env
+configfile: "config.yaml"
+
+##############################################################################
+# Get sample files
+##############################################################################
+
+with open(config['json_samples']) as f:
+    samples = json.load(f)
+
+TIMEPOINTS = sorted(list(samples['timepoints'].keys()), key=int)
+READS = ('R1', 'R2')
+
+##############################################################################
+# Setup directory structure
+# - report
+#   - fastqc
+#     - raw
+#     - trim
+# - workup
+#   - trim
+##############################################################################
+
+# output directories
+DIR_FASTQC_RAW = os.path.join(config['dir_report'], 'fastqc', 'raw')
+DIR_FASTQC_TRIM = os.path.join(config['dir_report'], 'fastqc', 'trim')
+DIR_TRIM = os.path.join(config['dir_workup'], 'trim')
+DIR_ALIGN = os.path.join(config['dir_workup'], 'align')
+for directory in (
+    DIR_FASTQC_RAW,
+    DIR_FASTQC_TRIM,
+    DIR_TRIM,
+    DIR_ALIGN):
+    os.makedirs(directory, exist_ok=True)
+
+# log directories
+DIR_LOG_TRIM = os.path.join(config['dir_workup'], 'log', 'trim')
+DIR_LOG_FASTQC = os.path.join(config['dir_workup'], 'log', 'fastqc')
+DIR_LOG_ALIGN = os.path.join(config['dir_workup'], 'log', 'align')
+for directory in (
+    DIR_LOG_TRIM,
+    DIR_LOG_FASTQC,
+    DIR_LOG_ALIGN):
+    os.makedirs(directory, exist_ok=True)
+
+# output paths
+OUT_FASTQC_RAW = [os.path.join(DIR_FASTQC_RAW, f'{timepoint}_{read}_fastqc.html')
+                  for read in READS
+                  for timepoint in TIMEPOINTS]
+OUT_FASTQC_TRIM = [os.path.join(DIR_FASTQC_TRIM, f'{timepoint}_{read}_fastqc.html')
+                   for read in READS
+                   for timepoint in TIMEPOINTS]
+OUT_TRIM = [os.path.join(DIR_TRIM, f'{timepoint}_{read}_trim.fastq.gz')
+            for read in READS
+            for timepoint in TIMEPOINTS]
+OUT_SJ = [os.path.join(DIR_ALIGN, f'{timepoint}', 'SJ.out.tab')
+          for timepoint in TIMEPOINTS]
+OUT_ALIGN = [os.path.join(DIR_ALIGN, f'{timepoint}', 'Aligned.sortedByCoord.out.bam')
+             for timepoint in TIMEPOINTS]
+OUT_COMPARISON = [os.path.join(DIR_ALIGN, f'{timepoint}', 'comparison.tsv')
+                  for timepoint in TIMEPOINTS]
+
+##############################################################################
+# RULE ALL
+##############################################################################
+
+rule all:
+    input: OUT_FASTQC_RAW + OUT_FASTQC_TRIM + OUT_TRIM + OUT_SJ + \
+           OUT_ALIGN + OUT_COMPARISON
+
+##############################################################################
+# FASTQC
+##############################################################################
+
+def get_raw_path_from_fastqc_file(wildcards):
+    '''
+    Given a filename (without extensions) for a FASTQC output from a raw (untrimmed) FASTQ file,
+    return the path to the raw FASTQ file.
+    '''
+    for timepoint in TIMEPOINTS:
+        for read in READS:
+            if samples['timepoints'][timepoint][read].split('.fastq')[0] == wildcards.sample:
+                return os.path.join(
+                    config['dir_fastqs'],
+                    samples['timepoints'][timepoint]['folder'],
+                    samples['timepoints'][timepoint][read])
+    raise KeyError(f'Could not find {wildcards.sample} in samples.')
+
+rule fastqc_raw:
+    input: get_raw_path_from_fastqc_file
+    output: os.path.join(DIR_FASTQC_RAW, "{sample}_fastqc.html")
+    log: os.path.join(DIR_LOG_FASTQC, '{sample}_raw_fastqc.log')
+    params:
+        outdir = DIR_FASTQC_RAW,
+        path_zip = lambda w: os.path.join(DIR_FASTQC_RAW, f'{w.sample}_fastqc.zip')
+    conda: config['env']['alignment']
+    shell:
+        "fastqc --outdir {params.outdir} {input} &> {log} && "
+        "rm {params.path_zip}"
+
+def get_fastqc_raw_path(wildcards, directory=DIR_FASTQC_RAW, suffix='_fastqc.html'):
+    '''
+    Given timepoint and read, return the path to the FASTQC output from a raw (untrimmed) FASTQ file.
+    '''
+    return os.path.join(
+        directory,
+        samples['timepoints'][wildcards.timepoint][wildcards.read].split('.fastq')[0] + suffix)
+
+rule fastqc_raw_rename:
+    # rename FASTQC HTML and log files
+    input:
+        html = get_fastqc_raw_path,
+        log = lambda x: get_fastqc_raw_path(x, directory=DIR_LOG_FASTQC, suffix='_raw_fastqc.log')
+    output:
+        html = os.path.join(DIR_FASTQC_RAW, '{timepoint}_{read}_fastqc.html'),
+        log = os.path.join(DIR_LOG_FASTQC, '{timepoint}_{read}_raw.log')
+    shell:
+        '''
+        mv {input.html} {output.html}
+        mv {input.log} {output.log}
+        '''
+
+rule fastqc_trim:
+    input: os.path.join(DIR_TRIM, '{sample}_trim.fastq.gz')
+    output: os.path.join(DIR_FASTQC_TRIM, '{sample}_trim_fastqc.html')
+    log: os.path.join(DIR_LOG_FASTQC, '{sample}_trim.log')
+    params:
+        outdir = DIR_FASTQC_TRIM,
+        path_zip = lambda w: os.path.join(DIR_FASTQC_TRIM, f'{w.sample}_trim_fastqc.zip')
+    conda: config['env']['alignment']
+    shell:
+        "fastqc --outdir {params.outdir} {input} &> {log} && "
+        "rm {params.path_zip}"
+
+rule fastqc_trim_rename:
+    input: os.path.join(DIR_FASTQC_TRIM, '{timepoint}_{read}_trim_fastqc.html')
+    output: os.path.join(DIR_FASTQC_TRIM, '{timepoint}_{read}_fastqc.html')
+    shell:
+        "mv {input} {output}"
+
+##############################################################################
+# Trim Adapters
+##############################################################################
+
+rule trim:
+    input: 
+        r1 = lambda w: os.path.join(
+            config['dir_fastqs'],
+            samples['timepoints'][w.timepoint]['folder'],
+            samples['timepoints'][w.timepoint]['R1']),
+        r2 = lambda w: os.path.join(
+            config['dir_fastqs'],
+            samples['timepoints'][w.timepoint]['folder'],
+            samples['timepoints'][w.timepoint]['R2']),
+    output: 
+        r1 = os.path.join(DIR_TRIM, '{timepoint}_R1_trim.fastq.gz'),
+        r1_unpaired = os.path.join(DIR_TRIM, '{timepoint}_R1_trim_unpaired.fastq.gz'),
+        r2 = os.path.join(DIR_TRIM, '{timepoint}_R2_trim.fastq.gz'),
+        r2_unpaired = os.path.join(DIR_TRIM, '{timepoint}_R2_trim_unpaired.fastq.gz')
+    log: os.path.join(DIR_LOG_TRIM, '{timepoint}.log')
+    params:
+        path_adapters = config['path_adapters']
+    conda: config['env']['alignment']
+    shell:
+        "trimmomatic PE -phred33"
+        "  {input.r1} {input.r2}"
+        "  {output.r1} {output.r1_unpaired}"
+        "  {output.r2} {output.r2_unpaired}"
+        "  ILLUMINACLIP:{params.path_adapters}:2:20:10:8:True LEADING:10 TRAILING:10 MINLEN:25 &> {log}"
+
+##############################################################################
+# Align reads
+##############################################################################
+
+rule unzip_annotation:
+    input: config['path_annotation']
+    output: temp(os.path.join(config['dir_workup'], 'annotation.gtf'))
+    params:
+        output = os.path.abspath(os.path.join(config['dir_workup'], 'annotation.gtf'))
+    shell:
+        '''
+        if [[ "{input}" == *.gz ]]; then
+            zcat {input} > {params.output}
+        else
+            ln -s -T {input} {params.output}
+        fi
+        '''
+
+# sole purpose of pass 1 is to detect novel (non-annotated) splice junctions
+rule align_pass1:
+    input:
+        r1 = os.path.join(DIR_TRIM, '{timepoint}_R1_trim.fastq.gz'),
+        r2 = os.path.join(DIR_TRIM, '{timepoint}_R2_trim.fastq.gz'),
+        genomeDir = config['dir_genome'],
+        annotation = ancient(os.path.join(config['dir_workup'], 'annotation.gtf'))
+    output: temp(os.path.join(DIR_ALIGN, '{timepoint}', 'SJ_pass1.out.tab'))
+    log: os.path.join(DIR_LOG_ALIGN, '{timepoint}_pass1.log')
+    params:
+        sjdboverhang = config['read_length'] - 1,
+        dir_out = os.path.join(DIR_ALIGN, "{timepoint}", ""),
+        sjout_pass1 = os.path.join(DIR_ALIGN, '{timepoint}', 'SJ.out.tab')
+    conda: config['env']['alignment']
+    threads: workflow.cores
+    resources:
+        mem_mb=40000,
+        runtime=600
+    shell:
+        '''
+        STAR \
+           --runThreadN {threads} \
+           --genomeDir {input.genomeDir} \
+           --genomeLoad NoSharedMemory \
+           --readFilesIn {input.r1} {input.r2} \
+           --readFilesCommand zcat \
+           --sjdbGTFfile {input.annotation} \
+           --sjdbOverhang {params.sjdboverhang} \
+           --alignIntronMin 10 \
+           --alignIntronMax 1000000 \
+           --alignMatesGapMax 1000000 \
+           --alignSJDBoverhangMin 5 \
+           --outFileNamePrefix {params.dir_out} \
+           --outSAMtype None \
+           --outSJfilterCountUniqueMin 10 3 3 3 \
+           --outSJfilterCountTotalMin 15 10 10 10 \
+           &> {log}
+        mv {sjout_pass1} {output}
+        '''
+
+# Remove the following (novel) junctions (see https://github.com/alexdobin/STAR/issues/638)
+# - junctions from reads mapping to mitochondria and scaffolds
+# - novel (unannotated) junctions
+rule align_filter_pass1_splice_junctions:
+    input: expand(os.path.join(DIR_ALIGN, '{timepoint}', 'SJ_pass1.out.tab'), timepoint=TIMEPOINTS)
+    output: os.path.join(DIR_ALIGN, 'SJ_filtered.out.tab')
+    shell:
+        "cat {input} | "
+        "awk -F'\t' '{{if ($1 != \"chrM\" && $1 ~ /^chr/ && $6 == 0) {{print $1,$2,$3,$4}} }}' | "
+        "sort | "
+        "uniq > {output}"
+
+rule align_pass2:
+    input:
+        r1 = os.path.join(DIR_TRIM, '{timepoint}_R1_trim.fastq.gz'),
+        r2 = os.path.join(DIR_TRIM, '{timepoint}_R2_trim.fastq.gz'),
+        genomeDir = config['dir_genome'],
+        annotation = ancient(os.path.join(config['dir_workup'], 'annotation.gtf')),
+        novel_splice_junctions = os.path.join(DIR_ALIGN, 'SJ_filtered.out.tab')
+    output:
+        bam = os.path.join(DIR_ALIGN, '{timepoint}', 'Aligned.sortedByCoord.out.bam')
+    log: os.path.join(DIR_LOG_ALIGN, '{timepoint}_pass2.log')
+    conda: config['env']['alignment']
+    threads: workflow.cores
+    params:
+        sjdboverhang = config['read_length'] - 1,
+        dir_out = os.path.join(DIR_ALIGN, "{timepoint}", "")
+    threads: workflow.cores
+    resources:
+        mem_mb=40000,
+        runtime=600
+    shell:
+        "STAR"
+        "  --runThreadN {threads}"
+        "  --genomeDir {input.genomeDir}"
+        "  --genomeLoad NoSharedMemory"
+        "  --readFilesIn {input.r1} {input.r2}"
+        "  --readFilesCommand zcat"
+        "  --sjdbGTFfile {input.annotation}"
+        "  --sjdbOverhang {params.sjdboverhang}"
+        "  --sjdbFileChrStartEnd {input.novel_splice_junctions}"
+        "  --alignIntronMin 10"
+        "  --alignIntronMax 1000000"
+        "  --alignMatesGapMax 1000000"
+        "  --alignSJDBoverhangMin 5"
+        "  --outFileNamePrefix {params.dir_out}"
+        "  --outSAMtype BAM SortedByCoordinate"
+        "  --outFilterMultimapNmax 50"
+        "  --outReadsUnmapped Fastx"
+        "  --quantMode GeneCounts"
+        "  &> {log}"
+
+##############################################################################
+# Process aligned reads
+##############################################################################
+
+rule filter_align:
+    input: os.path.join(DIR_ALIGN, '{timepoint}', 'Aligned.sortedByCoord.out.bam')
+    output:
+        unique = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique.sorted.bam'),
+        primary = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_primary.sorted.bam')
+    conda: config['env']['samtools']
+    threads: workflow.cores
+    shell:
+        '''
+        samtools view --threads {threads} -h --min-MQ 255 -o {output.unique} {input}
+        samtools view --threads {threads} -h -F 0x900 -o {output.primary} {input}
+        '''
+
+rule filter_align_check_identical1:
+    input:
+        unique = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique.sorted.bam'),
+        primary = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_primary.sorted.bam')
+    output: os.path.join(DIR_ALIGN, '{timepoint}', 'comparison.tsv')
+    conda: config['env']['picard']
+    shell:
+        '''
+        picard CompareSAMs \
+          --LENIENT_HEADER true \
+          --OUTPUT {output} \
+          {input.unique} \
+          {input.primary}
+        '''
+
+rule filter_align_check_identical2:
+    input:
+        unique = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique.sorted.bam'),
+        primary = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_primary.sorted.bam')
+    output:
+        unique_nonprimary = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_nonprimary.sorted.bam'),
+        primary_nonunique = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_primary_nonunique.sorted.bam'),
+    conda: config['env']['samtools']
+    threads: workflow.cores
+    shell:
+        '''
+        # check that unique reads (MAPQ255) are primary reads
+        samtools view --threads {threads} -f 0x900 -o {output.unique_nonprimary} {input.unique}
+        
+        # check that primary reads are unique (MAPQ255)
+        samtools view --threads {threads} {input.primary} | \
+            awk -F'\t' 'BEGIN {{OFS=FS}} {{if ($5 != "255") {{print $0}} }}' > \
+            {output.primary_nonunique}
+        '''
+
+#rule filter_align_deduplicate:
+#    input: os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique.sorted.bam')
+#    output: 
+#        bam = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_dedup.sorted.bam'),
+#        metrics = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_dedup.metrics'),
+#        bam_2500 = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_dedup2500.sorted.bam'),
+#        metrics_2500 = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_dedup2500.metrics')
+#    log: os.path.join(DIR_LOG_PROCESS, '{timepoint}_dedup.log')
+#    conda: config['picard']
+#    shell:
+#        '''
+#        picard MarkDuplicates \
+#           -I {input} \
+#           -O {output.bam} \
+#           -M {output.metrics} \
+#           --TAGGING_POLICY All \
+#           --REMOVE_DUPLICATES
+#
+#        picard MarkDuplicates \
+#           -I {input} \
+#           -O {output.bam_2500} \
+#           -M {output.metrics_2500} \
+#           --TAGGING_POLICY All \
+#           --REMOVE_DUPLICATES \
+#           --OPTICAL_DUPLICATE_PIXEL_DISTANCE 2500
+#        '''
+#
+#rule deduplicate:
+#    input: os.path.join(DIR_ALIGN, '{timepoint}', 'Aligned.sortedByCoord.out.bam')
+#    output: 
+#        bam = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned.Aligned.sortedByCoord.out.bam'),
+#        metrics = 
+#    conda: config['picard']
+#    shell:
+#        "java -jar ~/bin/picard.jar MarkDuplicates"
+#        "  -I {input}"
+#        "  -O {output.bam}"
+#        "  -M "${dir_dedup}/${timepoint}.MarkDuplicates.metrics" \
+#        --TMP_DIR "$dir_tmp" \
+#        --TAGGING_POLICY All \
+#        --OPTICAL_DUPLICATE_PIXEL_DISTANCE 2500 &
+
+##############################################################################
+# Comments
+#############################################################################
+regex_dir_data = re.compile(r'\d+minchase')
+#regex_file_fastq_raw = re.compile(r'.*_S\d+_R[12]_\d+.fastq.gz')
+
+#dir_timepoints = [folder for folder in os.listdir(config['dir_fastqs'])
+#                  if regex_dir_data.match(folder)]
+
+# echo "java -jar /groups/guttman/software/trimmomatic/Trimmomatic-0.38/trimmomatic-0.38.jar PE -threads 16 -phred33 $(ls *R1*.fastq.gz) $(ls *R2*.fastq.gz) Trimmed_R1.fastq.gz Trimmed_Unpaired_R1.fastq.gz Trimmed_R2.fastq.gz Trimmed_Unpaired_R2.fastq.gz 
+
+#def get_raw_paths(wildcards):
+#    return os.path.join(
+#        config['dir_fastqs'],
+#        samples['timepoints'][wildcards.timepoint]['folder'],
+#        samples['timepoints'][wildcards.timepoint][wildcards.read])
+
+# PATHS_FASTQS_RAW = glob.glob(config['dir_fastqs'] + '/*minchase/*S*_R*_*.fastq.gz')

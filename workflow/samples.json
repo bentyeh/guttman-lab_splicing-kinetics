@@ -1,0 +1,65 @@
+{
+    "dir_data": "/central/groups/guttman/primarydata/sequencingruns/20220823/runfolders/volvox02/nextseq/220822_VH00472_97_AACCG37M5/Analysis/1/Data/fastq",
+    "timepoints": {
+        "0": {
+            "folder": "0minchase",
+            "R1": "10min5EU_0minchase_S3_R1_001.fastq.gz",
+            "R2": "10min5EU_0minchase_S3_R2_001.fastq.gz"
+        },
+        "10": {
+            "folder": "10minchase",
+            "R1": "10min5EU_10minchase_S4_R1_001.fastq.gz",
+            "R2": "10min5EU_10minchase_S4_R2_001.fastq.gz"
+        },
+        "15": {
+            "folder": "15minchase",
+            "R1": "10min5EU_15minchase_S5_R1_001.fastq.gz",
+            "R2": "10min5EU_15minchase_S5_R2_001.fastq.gz"
+        },
+        "20": {
+            "folder": "20minchase",
+            "R1": "10min5EU_20minchase_S6_R1_001.fastq.gz",
+            "R2": "10min5EU_20minchase_S6_R2_001.fastq.gz"
+        },
+        "25": {
+            "folder": "25minchase",
+            "R1": "10min5EU_25minchase_S7_R1_001.fastq.gz",
+            "R2": "10min5EU_25minchase_S7_R2_001.fastq.gz"
+        },
+        "30": {
+            "folder": "30minchase",
+            "R1": "10min5EU_30minchase_S8_R1_001.fastq.gz",
+            "R2": "10min5EU_30minchase_S8_R2_001.fastq.gz"
+        },
+        "45": {
+            "folder": "45minchase",
+            "R1": "10min5EU_45minchase_S9_R1_001.fastq.gz",
+            "R2": "10min5EU_45minchase_S9_R2_001.fastq.gz"
+        },
+        "60": {
+            "folder": "60minchase",
+            "R1": "10min5EU_60minchase_S10_R1_001.fastq.gz",
+            "R2": "10min5EU_60minchase_S10_R2_001.fastq.gz"
+        },
+        "75": {
+            "folder": "75minchase",
+            "R1": "10min5EU_75minchase_S11_R1_001.fastq.gz",
+            "R2": "10min5EU_75minchase_S11_R2_001.fastq.gz"
+        },
+        "90": {
+            "folder": "90minchase",
+            "R1": "10min5EU_90minchase_S12_R1_001.fastq.gz",
+            "R2": "10min5EU_90minchase_S12_R2_001.fastq.gz"
+        },
+        "120": {
+            "folder": "120minchase",
+            "R1": "10min5EU_120minchase_S13_R1_001.fastq.gz",
+            "R2": "10min5EU_120minchase_S13_R2_001.fastq.gz"
+        },
+        "240": {
+            "folder": "240minchase",
+            "R1": "10min5EU_240minchase_S14_R1_001.fastq.gz",
+            "R2": "10min5EU_240minchase_S14_R2_001.fastq.gz"
+        }
+    }
+}

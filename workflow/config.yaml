@@ -1,0 +1,16 @@
+# Reference for relative directories
+# 1. (Default) Directory in which snakemake is executed
+# 2. workdir: "<path>" specified in the Snakefile
+# 3. As specified by --directory or -d on the command line
+dir_fastqs: '../data/fastqs'
+dir_report: 'report'
+dir_workup: 'workup'
+dir_genome: '/central/groups/guttman/btyeh/ref/star/GRCm38'
+path_adapters: '../data_aux/adapters_trimmomatic.fa'
+path_annotation: '../data/gencode.vM25.primary_assembly.annotation.gtf.gz'
+read_length: 151
+json_samples: 'samples.json'
+env:
+  alignment: 'envs/alignment.yaml'
+  picard: 'envs/picard.yaml'
+  samtools: 'envs/samtools.yaml'
