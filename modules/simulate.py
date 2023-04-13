@@ -264,7 +264,7 @@ def simulate_transcripts(
         transcripts[:, :-1][np.isnan(mask_to_splice)] = np.nan
 
         # elongate
-        v_int = int(k_elong) + (rng.random() > (k_elong - int(k_elong)))
+        v_int = int(k_elong) + (rng.random(transcripts.shape[0]) < (k_elong - int(k_elong)))
         transcripts[:, -1] = np.minimum(transcripts[:, -1] + v_int, gene_length)
 
         # initiation
@@ -272,10 +272,10 @@ def simulate_transcripts(
             n_new_transcripts = rng.poisson(k_init)
             if n_new_transcripts > 0:
                 new_transcripts = np.zeros((n_new_transcripts, n_introns + 1), dtype=int)
-                if np.minimum(v_int, gene_length) <= 1:
+                if np.minimum(k_elong, gene_length) <= 1:
                     new_transcripts[:, -1] = 1
                 else:
-                    new_transcripts[:, -1] = rng.choice(np.minimum(v_int, gene_length) - 1,
+                    new_transcripts[:, -1] = rng.choice(np.minimum(int(k_elong), gene_length) - 1,
                                                         n_new_transcripts) + 1
                 transcripts = np.append(transcripts, new_transcripts, axis=0)
                 n_transcripts = transcripts.shape[0]
