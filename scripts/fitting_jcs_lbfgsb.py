@@ -1,0 +1,73 @@
+import os
+import sys
+import argparse
+import numpy as np
+import pickle
+import time
+import scipy.optimize
+
+dir_project = os.path.split(os.path.split(os.path.realpath(__file__))[0])[0]
+sys.path.append(os.path.join(dir_project, 'modules'))
+import fitting
+import utils_genomics
+import simulate
+
+dir_jcs = os.path.join(dir_project, 'data_aux', 'sim_junction_counts')
+
+# mouse Actb main isoform (ENSMUST00000100497.10)
+gene_length = 3640
+pos_intron = np.array(
+    [[ 828, 1135, 1669, 2363, 2579],
+     [ 952, 1229, 2122, 2449, 3537]])
+time_steps = np.array([0, 10, 15, 20, 25, 30, 45, 60, 75, 90, 120, 240]) * 60 + 600
+pos_exon = utils_genomics.pos_intron_to_pos_exon(pos_intron, gene_length)
+
+def main(n, index):
+    mean = np.load(os.path.join(dir_jcs, f'mean-{index}.npy'))
+    data = mean[time_steps - 1, :]
+    data_time = time_steps - 1
+    bounds = np.log10(np.array([(0.01, 20), (5e-4, 0.5), (1e-3, 0.5), (10, 100)]))
+    x0 = np.array([np.mean(bound) for bound in bounds])
+
+    loss_sse_args = fitting.loss_sse_args(
+        stats_fun='junction_counts',
+        data_time=data_time,
+        data=data,
+        pos_intron=pos_intron,
+        gene_length=gene_length,
+        n=n,
+        kwargs=dict(
+            log10=True,
+            use_tqdm=True,
+            use_pool=True,
+            alt_splicing=False,
+            stats_kwargs=dict(time_steps=data_time, pos_exon=pos_exon),
+            aggfun=simulate.mean))
+    fitting.callback_scipy(
+        x0,
+        *loss_sse_args,
+        log10=True)
+    time_start = time.time()
+    res = scipy.optimize.minimize(
+        fitting.loss_sse,
+        x0,
+        args=loss_sse_args,
+        method='L-BFGS-B',
+        bounds=bounds,
+        options={'eps': 0.1},
+        callback=lambda xk: fitting.callback_scipy(
+            xk,
+            *loss_sse_args,
+            log10=True,
+            time_start=time_start))
+    with open(os.path.join(dir_jcs, f'fit-lbfgsb-{index}.pkl'), 'wb') as f:
+        pickle.dump(res, f)
+    return res
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Fit transcription and splicing parameters using L-BFGS-B.')
+    parser.add_argument('index', type=int, help='parameter set index')
+    parser.add_argument('--n', type=int, default=50,
+                        help='number of simulations to average over')
+    args = parser.parse_args()
+    main(args.n, args.index)
