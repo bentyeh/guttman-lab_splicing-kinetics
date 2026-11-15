@@ -1,0 +1,16 @@
+raw R1 45320172
+raw R2 45320172
+trim R1 45309210
+trim R1_unpaired 0
+trim R2 45309210
+trim R2_unpaired 0
+align R1 36170912
+align R2 36170912
+align R1_unmapped 9138298
+align R2_unmapped 9138298
+align_unique R1 31750147
+align_unique R2 31750147
+align_unique_dedup R1 9468873
+align_unique_dedup R2 9468873
+align_unique_dedup2500 R1 9468873
+align_unique_dedup2500 R2 9468873

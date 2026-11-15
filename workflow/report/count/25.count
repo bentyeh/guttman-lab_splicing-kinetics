@@ -1,0 +1,16 @@
+raw R1 38492063
+raw R2 38492063
+trim R1 38474942
+trim R1_unpaired 0
+trim R2 38474942
+trim R2_unpaired 0
+align R1 30321182
+align R2 30321182
+align R1_unmapped 8153760
+align R2_unmapped 8153760
+align_unique R1 26407716
+align_unique R2 26407716
+align_unique_dedup R1 6543568
+align_unique_dedup R2 6543568
+align_unique_dedup2500 R1 6543568
+align_unique_dedup2500 R2 6543568
