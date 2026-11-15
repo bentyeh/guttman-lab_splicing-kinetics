@@ -2,6 +2,24 @@
 *.code-workspace
 *.vscode
 data/
+data_aux/*
+!data_aux/adapters_trimmomatic.fa
+!data_aux/mm10.chrom_nuclear.sizes
+!data_aux/pou5f1.gtf
+!data_aux/single_isoform_single_intron.gff
+workflow/workup/
+workflow/report/*
+!workflow/report/count
+
+# macOS artifacts
+.DS_Store
+._*
+
+# Cluster job logs
+logs/
+
+# Snakemake cache
+workflow/.snakemake/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
