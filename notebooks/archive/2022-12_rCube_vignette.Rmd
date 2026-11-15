@@ -1,0 +1,116 @@
+---
+title: "rCube Vignette"
+author: "Benjamin Yeh"
+date: "2022-12-14"
+output: html_document
+---
+
+# Setup
+
+1. Install original rCube package from Gagneur lab into "temporary" library. This is a workaround
+to access the vignette in PDF form. (I have yet to figure out how to build the vignette PDF from the
+sweave file (vignette/rCube.Rnw).) Note that this package is never loaded via `library(rCube)`.
+
+```{r setup, include=FALSE}
+lib_bioc <- "D:/Documents/R/4.2/bioc" # Bioconductor library
+lib_tmp <- "D:/Documents/R/4.2/tmp"   # Temporary library for rCube
+
+# add Bioconductor library to .libPaths so that rCube dependencies are recognized
+.libPaths(c(lib_tmp, lib_bioc, .libPaths()))
+
+# install rCube package in temporary library
+if (!dir.exists(lib_tmp)) {
+  dir.create(lib_tmp)
+}
+if (! "rCube" %in% rownames(installed.packages(lib.loc = lib_tmp))) {
+  devtools::install_github("https://github.com/gagneurlab/rCube", lib = lib_tmp)
+}
+```
+
+2. Load the rCube package based on modified code.
+
+Bugs fixed
+- Use `withDimnames=FALSE` argument when calling `SummarizedExperiment::assay` and
+`SummarizedExperiment::assays` due to changes in version 1.18.0 of `SummarizedExperiment` package
+(see https://github.com/Bioconductor/SummarizedExperiment/blob/master/NEWS)
+- 
+
+```{r}
+# path to rCube repository (e.g., after using git clone https://github.com/gagneurlab/rCube.git)
+path_rCube <- "D:/Documents/Projects/forked_repos/rCube"
+devtools::load_all(path_rCube)
+```
+
+# T-Cell Activation Dataset Tutorial
+
+## Load data
+
+```{r}
+data("exampleExons")
+constitutiveExons <- createConstitutiveFeaturesGRangesFromGRanges(
+  exampleExons,
+  BPPARAM = NULL,
+  ncores = 1)
+```
+
+```{r}
+folder <- system.file("extdata/TcellActivation", package="rCube")
+expDesign <- read.delim(file.path(folder, "experimentalDesign.txt"))
+expDesign$filename <- purrr::map_chr(expDesign$filename, ~ file.path(folder, .))
+exonCounts <- setupExperiment(constitutiveExons, designMatrix=expDesign, files=NULL)
+```
+
+```{r}
+exonCounts <- countFeatures(exonCounts)
+```
+
+```{r}
+data("spikeins")
+data("spikeinLabeling")
+spikeinLengths <- width(spikeins)
+```
+
+```{r}
+spikeinCounts <- setupExperimentSpikeins(
+  rows = spikeins,
+  designMatrix = expDesign,
+  length = spikeinLengths,
+  labelingState = spikeinLabeling)
+spikeinCounts <- countSpikeins(spikeinCounts)
+```
+
+## Estimate size factors from spike-ins
+
+```{r}
+exonCounts <- estimateSizeFactors(exonCounts, spikeinCounts, method = "spikeinGLM")
+```
+
+## Estimate dispersion for each gene
+
+```{r}
+exonCounts <- estimateSizeDispersions(exonCounts, method = "DESeqDispGeneEst")
+```
+
+## Exon-specific synthesis and degradation rate estimates
+
+```{r}
+elementMetadata(exonCounts)$numberOfIterations <- 7
+
+rates <- estimateRateByFirstOrderKinetics(
+  exonCounts,
+  replicate = c(1, 2, "1:2"),
+  method = "single",
+  BPPARAM = BiocParallel::MulticoreParam(1))
+
+assay(rates) %>% 
+  as.data.frame() %>%
+  rownames_to_column(var = "feature") %>%
+  pivot_longer(-feature) %>%
+  mutate(
+    Condition = str_split_i(name, "_", 1),
+    Rate = str_split_i(name, "_", 2),
+    Replicate = str_split_i(name, "_", 3)) %>% 
+  select(feature, Condition, Rate, Replicate, value) %>% 
+  arrange(feature, Condition, Rate, Replicate)
+```
+
