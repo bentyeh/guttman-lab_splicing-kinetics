@@ -1,9 +1,7 @@
 name: alignment
 channels:
-  - defaults
-  - anaconda
-  - bioconda
+  - conda-forge
 dependencies:
-  - fastqc=0.12.1
-  - star=2.7.10b
-  - trimmomatic=0.39
+  - bioconda::fastqc=0.12.1
+  - bioconda::star=2.7.10b
+  - bioconda::trimmomatic=0.39

@@ -40,23 +40,30 @@ READS = ('R1', 'R2')
 # output directories
 DIR_FASTQC_RAW = os.path.join(config['dir_report'], 'fastqc', 'raw')
 DIR_FASTQC_TRIM = os.path.join(config['dir_report'], 'fastqc', 'trim')
+DIR_COUNT = os.path.join(config['dir_report'], 'count')
 DIR_TRIM = os.path.join(config['dir_workup'], 'trim')
 DIR_ALIGN = os.path.join(config['dir_workup'], 'align')
 for directory in (
     DIR_FASTQC_RAW,
     DIR_FASTQC_TRIM,
+    DIR_COUNT,
     DIR_TRIM,
     DIR_ALIGN):
     os.makedirs(directory, exist_ok=True)
 
 # log directories
-DIR_LOG_TRIM = os.path.join(config['dir_workup'], 'log', 'trim')
-DIR_LOG_FASTQC = os.path.join(config['dir_workup'], 'log', 'fastqc')
-DIR_LOG_ALIGN = os.path.join(config['dir_workup'], 'log', 'align')
+DIR_LOG = os.path.join(config['dir_workup'], 'log')
+DIR_LOG_TRIM = os.path.join(DIR_LOG, 'trim')
+DIR_LOG_FASTQC = os.path.join(DIR_LOG, 'fastqc')
+DIR_LOG_ALIGN = os.path.join(DIR_LOG, 'align')
+DIR_LOG_ALIGN_QC = os.path.join(DIR_LOG, 'align_qc')
+DIR_LOG_MESSAGES = os.path.join(DIR_LOG, 'messages')
 for directory in (
     DIR_LOG_TRIM,
     DIR_LOG_FASTQC,
-    DIR_LOG_ALIGN):
+    DIR_LOG_ALIGN,
+    DIR_LOG_ALIGN_QC,
+    DIR_LOG_MESSAGES):
     os.makedirs(directory, exist_ok=True)
 
 # output paths
@@ -73,16 +80,29 @@ OUT_SJ = [os.path.join(DIR_ALIGN, f'{timepoint}', 'SJ.out.tab')
           for timepoint in TIMEPOINTS]
 OUT_ALIGN = [os.path.join(DIR_ALIGN, f'{timepoint}', 'Aligned.sortedByCoord.out.bam')
              for timepoint in TIMEPOINTS]
-OUT_COMPARISON = [os.path.join(DIR_ALIGN, f'{timepoint}', 'comparison.tsv')
-                  for timepoint in TIMEPOINTS]
+OUT_ALIGN_UNIQUE = [os.path.join(DIR_ALIGN, f'{timepoint}', 'aligned_unique.sorted.bam')
+                    for timepoint in TIMEPOINTS]
+OUT_COUNT = [os.path.join(DIR_COUNT, f'{timepoint}.count')
+             for timepoint in TIMEPOINTS]
+OUT_DEDUP_COMPARE = [os.path.join(DIR_ALIGN, f'{timepoint}', 'comparison.tsv')
+                     for timepoint in TIMEPOINTS]
+OUT_MESSAGES = os.path.join(DIR_LOG, 'messages.log')
 
 ##############################################################################
 # RULE ALL
 ##############################################################################
 
 rule all:
-    input: OUT_FASTQC_RAW + OUT_FASTQC_TRIM + OUT_TRIM + OUT_SJ + \
-           OUT_ALIGN + OUT_COMPARISON
+    input: [OUT_MESSAGES] + \
+           OUT_FASTQC_RAW + OUT_FASTQC_TRIM + \
+           OUT_TRIM + \
+           OUT_SJ + OUT_ALIGN + \
+           OUT_ALIGN_UNIQUE + OUT_COUNT + OUT_DEDUP_COMPARE
+
+rule messages:
+    input: [os.path.join(DIR_LOG_MESSAGES, x) for x in os.listdir(DIR_LOG_MESSAGES)]
+    output: OUT_MESSAGES
+    shell: "cat {input} > {output}"
 
 ##############################################################################
 # FASTQC
@@ -155,6 +175,115 @@ rule fastqc_trim_rename:
         "mv {input} {output}"
 
 ##############################################################################
+# Counts
+##############################################################################
+
+rule count_all:
+    input:
+        os.path.join(DIR_COUNT, '{timepoint}.count_raw'),
+        os.path.join(DIR_COUNT, '{timepoint}.count_trim'),
+        os.path.join(DIR_COUNT, '{timepoint}.count_align'),
+        os.path.join(DIR_COUNT, '{timepoint}.count_align_unique'),
+        os.path.join(DIR_COUNT, '{timepoint}.count_align_unique_dedup')
+    output: os.path.join(DIR_COUNT, '{timepoint}.count')
+    shell: "cat {input} > \"{output}\""
+
+rule count_raw:
+    input:
+        r1 = lambda w: os.path.join(
+                config['dir_fastqs'],
+                samples['timepoints'][w.timepoint]['folder'],
+                samples['timepoints'][w.timepoint]['R1']),
+        r2 = lambda w: os.path.join(
+            config['dir_fastqs'],
+            samples['timepoints'][w.timepoint]['folder'],
+            samples['timepoints'][w.timepoint]['R2'])
+    output: temp(os.path.join(DIR_COUNT, '{timepoint}.count_raw'))
+    shell:
+        '''
+        echo raw R1 $(($(zcat "{input.r1}" | wc -l) / 4)) > "{output}"
+        echo raw R2 $(($(zcat "{input.r2}" | wc -l) / 4)) >> "{output}"
+        '''
+
+rule count_trim:
+    input:
+        r1 = os.path.join(DIR_TRIM, '{timepoint}_R1_trim.fastq.gz'),
+        r1_unpaired = os.path.join(DIR_TRIM, '{timepoint}_R1_trim_unpaired.fastq.gz'),
+        r2 = os.path.join(DIR_TRIM, '{timepoint}_R2_trim.fastq.gz'),
+        r2_unpaired = os.path.join(DIR_TRIM, '{timepoint}_R2_trim_unpaired.fastq.gz')
+    output: temp(os.path.join(DIR_COUNT, '{timepoint}.count_trim'))
+    shell:
+        '''
+        echo trim R1 $(($(zcat "{input.r1}" | wc -l) / 4)) > "{output}"
+        echo trim R1_unpaired $(($(zcat "{input.r1_unpaired}" | wc -l) / 4)) >> "{output}"
+        echo trim R2 $(($(zcat "{input.r2}" | wc -l) / 4)) >> "{output}"
+        echo trim R2_unpaired $(($(zcat "{input.r2_unpaired}" | wc -l) / 4)) >> "{output}"
+        '''
+
+rule count_align:
+    input:
+        bam = os.path.join(DIR_ALIGN, '{timepoint}', 'Aligned.sortedByCoord.out.bam'),
+        unmapped1 = os.path.join(DIR_ALIGN, '{timepoint}', 'Unmapped.out.mate1'),
+        unmapped2 = os.path.join(DIR_ALIGN, '{timepoint}', 'Unmapped.out.mate2')
+    output: temp(os.path.join(DIR_COUNT, '{timepoint}.count_align'))
+    conda: config['env']['samtools']
+    threads: workflow.cores
+    shell:
+        '''
+        echo align R1 $(samtools view --threads {threads} -c -F 0x900 -f 0x40 "{input.bam}") > "{output}"
+        echo align R2 $(samtools view --threads {threads} -c -F 0x900 -f 0x80 "{input.bam}") >> "{output}"
+        
+        # TMPDIR should be set by snakemake's resources.tmpdir;
+        # if TMPDIR is not set, set default value for TMPDIR to '/tmp'
+        TMPDIR="${{TMPDIR:-/tmp}}"
+        tmpfile1="$(mktemp --tmpdir="$TMPDIR" count_align.XXXXXX)"
+        tmpfile2="$(mktemp --tmpdir="$TMPDIR" count_align.XXXXXX)"
+
+        # check that the counts of unmapped reads is identical from parsing Unmapped.out.mate1/2
+        # note that $NF in awk refers to the last field
+        awk 'NR%4==1 {{print $NF}}' "{input.unmapped1}" | sort | uniq -c > "$tmpfile1"
+        awk 'NR%4==1 {{print $NF}}' "{input.unmapped2}" | sort | uniq -c > "$tmpfile2"
+        ndiff=$(diff "$tmpfile1" "$tmpfile2" | head | wc -l)
+        if [ "$ndiff" -gt "0" ]; then
+            echo "align R1_unmapped undefined" >> "{output}"
+            echo "align R1_unmapped undefined" >> "{output}"
+        else
+            r1_unmapped=$(awk '{{k=0; if ($2 == "00" || $2 == "01") {{k+=$1}}}} END {{print k}}' "$tmpfile1")
+            r2_unmapped=$(awk '{{k=0; if ($2 == "00" || $2 == "10") {{k+=$1}}}} END {{print k}}' "$tmpfile1")
+            echo "align R1_unmapped $r1_unmapped" >> "{output}"
+            echo "align R2_unmapped $r2_unmapped" >> "{output}"
+        fi
+        
+        rm "$tmpfile1" "$tmpfile2"
+        '''
+
+rule count_align_unique:
+    input: os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique.sorted.bam')
+    output: temp(os.path.join(DIR_COUNT, '{timepoint}.count_align_unique'))
+    conda: config['env']['samtools']
+    threads: workflow.cores
+    shell:
+        '''
+        echo "align_unique R1 $(samtools view --threads {threads} -c -f 0x40 "{input}")" > "{output}"
+        echo "align_unique R2 $(samtools view --threads {threads} -c -f 0x80 "{input}")" >> "{output}"
+        '''
+
+rule count_align_unique_dedup:
+    input:
+        dedup = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_dedup.sorted.bam'),
+        dedup2500 = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_dedup2500.sorted.bam')
+    output: temp(os.path.join(DIR_COUNT, '{timepoint}.count_align_unique_dedup'))
+    conda: config['env']['samtools']
+    threads: workflow.cores
+    shell:
+        '''
+        echo "align_unique_dedup R1 $(samtools view --threads {threads} -c -f 0x40 "{input.dedup}")" > "{output}"
+        echo "align_unique_dedup R2 $(samtools view --threads {threads} -c -f 0x80 "{input.dedup}")" >> "{output}"
+        echo "align_unique_dedup2500 R1 $(samtools view --threads {threads} -c -f 0x40 "{input.dedup2500}")" >> "{output}"
+        echo "align_unique_dedup2500 R2 $(samtools view --threads {threads} -c -f 0x80 "{input.dedup2500}")" >> "{output}"
+        '''
+
+##############################################################################
 # Trim Adapters
 ##############################################################################
 
@@ -167,7 +296,7 @@ rule trim:
         r2 = lambda w: os.path.join(
             config['dir_fastqs'],
             samples['timepoints'][w.timepoint]['folder'],
-            samples['timepoints'][w.timepoint]['R2']),
+            samples['timepoints'][w.timepoint]['R2'])
     output: 
         r1 = os.path.join(DIR_TRIM, '{timepoint}_R1_trim.fastq.gz'),
         r1_unpaired = os.path.join(DIR_TRIM, '{timepoint}_R1_trim_unpaired.fastq.gz'),
@@ -261,8 +390,7 @@ rule align_pass2:
         genomeDir = config['dir_genome'],
         annotation = ancient(os.path.join(config['dir_workup'], 'annotation.gtf')),
         novel_splice_junctions = os.path.join(DIR_ALIGN, 'SJ_filtered.out.tab')
-    output:
-        bam = os.path.join(DIR_ALIGN, '{timepoint}', 'Aligned.sortedByCoord.out.bam')
+    output: os.path.join(DIR_ALIGN, '{timepoint}', 'Aligned.sortedByCoord.out.bam')
     log: os.path.join(DIR_LOG_ALIGN, '{timepoint}_pass2.log')
     conda: config['env']['alignment']
     threads: workflow.cores
@@ -295,83 +423,129 @@ rule align_pass2:
         "  &> {log}"
 
 ##############################################################################
-# Process aligned reads
+# Filter and QC aligned reads
 ##############################################################################
 
-rule filter_align:
+rule filter_align_unique:
     input: os.path.join(DIR_ALIGN, '{timepoint}', 'Aligned.sortedByCoord.out.bam')
-    output:
-        unique = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique.sorted.bam'),
-        primary = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_primary.sorted.bam')
+    output: os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique.sorted.bam')
+    conda: config['env']['samtools']
+    threads: workflow.cores
+    shell:
+        "samtools view -h --threads {threads} --exclude-flags 0x100 --min-MQ 255 -o \"{output}\" \"{input}\""
+
+rule qc_align:
+    input: os.path.join(DIR_ALIGN, '{timepoint}', 'Aligned.sortedByCoord.out.bam')
+    output: temp(os.path.join(DIR_LOG_MESSAGES, '{timepoint}_align_qc.log'))
     conda: config['env']['samtools']
     threads: workflow.cores
     shell:
         '''
-        samtools view --threads {threads} -h --min-MQ 255 -o {output.unique} {input}
-        samtools view --threads {threads} -h -F 0x900 -o {output.primary} {input}
+        # check for reads that are putatively unique (MAPQ=255) but have the 0x100 flag (secondary alignment);
+        # there shouldn't be any
+        n_MAPQ255_secondary=$(samtools view -c --threads {threads} --require-flags 0x100 --min-MQ 255 {input})
+        if [ "$n_MAPQ255_secondary" -gt "0" ]; then
+            printf '%s' \
+                "Timepoint {wildcards.timepoint} ({input}) has $n_MAPQ255_secondary reads " \
+                "with both MAPQ=255 and flag 0x100 set." > "{output}"
+        fi
+        
+        # check for chimeric reads; there shouldn't be any (the default --chimSegmentMin value for STAR is 0,
+        # which means no chimeric alignments are output
+        n_chimeric=$(samtools view -c --threads {threads} --require-flags 0x800 {input})
+        if [ "$n_chimeric" -gt "0" ]; then
+            printf '%s' \
+                "Timepoint {wildcards.timepoint} ({input}) has $n_chimeric chimeric reads." \
+                >> "{output}"
+        fi
+        
+        touch "{output}"
         '''
 
-rule filter_align_check_identical1:
+rule filter_align_dedup:
+    input: os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique.sorted.bam')
+    output: 
+        bam = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_dedup.sorted.bam'),
+        metrics = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_dedup.metrics'),
+        bam_2500 = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_dedup2500.sorted.bam'),
+        metrics_2500 = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_dedup2500.metrics')
+    log: os.path.join(DIR_LOG_ALIGN_QC, '{timepoint}_dedup.log')
+    conda: config['env']['picard']
+    resources:
+        mem_mb=10000,
+        runtime=300
+    shell:
+        '''
+        echo "----------------------------------------------------------------------" &> {log}
+        echo "picard MarkDuplicates OPTICAL_DUPLICATE_PIXEL_DISTANCE <default = 100>" &>> {log}
+        echo "----------------------------------------------------------------------" &>> {log}
+        echo "" &>> {log}
+
+        picard -Xmx{resources.mem_mb}m MarkDuplicates \
+           -I {input} \
+           -O {output.bam} \
+           -M {output.metrics} \
+           --MAX_RECORDS_IN_RAM 1000000 \
+           --TAGGING_POLICY All \
+           --REMOVE_DUPLICATES &>> {log}
+
+        echo "" &>> {log}
+        echo "----------------------------------------------------------------------" &>> {log}
+        echo "picard MarkDuplicates OPTICAL_DUPLICATE_PIXEL_DISTANCE 2500"            &>> {log}
+        echo "----------------------------------------------------------------------" &>> {log}
+        echo "" &>> {log}
+
+        picard -Xmx{resources.mem_mb}m MarkDuplicates \
+           -I {input} \
+           -O {output.bam_2500} \
+           -M {output.metrics_2500} \
+           --MAX_RECORDS_IN_RAM 1000000 \
+           --TAGGING_POLICY All \
+           --REMOVE_DUPLICATES \
+           --OPTICAL_DUPLICATE_PIXEL_DISTANCE 2500 &>> {log}
+        '''
+
+rule filter_align_dedup_check_identical:
     input:
-        unique = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique.sorted.bam'),
-        primary = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_primary.sorted.bam')
+        dedup = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_dedup.sorted.bam'),
+        dedup2500 = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_dedup2500.sorted.bam')
     output: os.path.join(DIR_ALIGN, '{timepoint}', 'comparison.tsv')
     conda: config['env']['picard']
+    log: os.path.join(DIR_LOG_ALIGN_QC, '{timepoint}.CompareDedup.log')
+    resources:
+        mem_mb=10000,
+        runtime=240
     shell:
         '''
-        picard CompareSAMs \
+        picard -Xmx{resources.mem_mb}m CompareSAMs \
           --LENIENT_HEADER true \
+          --MAX_RECORDS_IN_RAM 1000000 \
           --OUTPUT {output} \
-          {input.unique} \
-          {input.primary}
+          {input.dedup} \
+          {input.dedup2500} &> {log}
         '''
-
-rule filter_align_check_identical2:
-    input:
-        unique = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique.sorted.bam'),
-        primary = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_primary.sorted.bam')
-    output:
-        unique_nonprimary = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_nonprimary.sorted.bam'),
-        primary_nonunique = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_primary_nonunique.sorted.bam'),
-    conda: config['env']['samtools']
-    threads: workflow.cores
-    shell:
-        '''
-        # check that unique reads (MAPQ255) are primary reads
-        samtools view --threads {threads} -f 0x900 -o {output.unique_nonprimary} {input.unique}
-        
-        # check that primary reads are unique (MAPQ255)
-        samtools view --threads {threads} {input.primary} | \
-            awk -F'\t' 'BEGIN {{OFS=FS}} {{if ($5 != "255") {{print $0}} }}' > \
-            {output.primary_nonunique}
-        '''
-
-#rule filter_align_deduplicate:
-#    input: os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique.sorted.bam')
-#    output: 
-#        bam = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_dedup.sorted.bam'),
-#        metrics = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_dedup.metrics'),
-#        bam_2500 = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_dedup2500.sorted.bam'),
-#        metrics_2500 = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_dedup2500.metrics')
-#    log: os.path.join(DIR_LOG_PROCESS, '{timepoint}_dedup.log')
-#    conda: config['picard']
+#
+#rule filter_align_check_identical2:
+#    input:
+#        unique = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique.sorted.bam'),
+#        primary = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_primary.sorted.bam')
+#    output:
+#        unique_nonprimary = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_unique_nonprimary.sorted.bam'),
+#        primary_nonunique = os.path.join(DIR_ALIGN, '{timepoint}', 'aligned_primary_nonunique.sorted.bam'),
+#    conda: config['env']['samtools']
+#    threads: workflow.cores
 #    shell:
 #        '''
-#        picard MarkDuplicates \
-#           -I {input} \
-#           -O {output.bam} \
-#           -M {output.metrics} \
-#           --TAGGING_POLICY All \
-#           --REMOVE_DUPLICATES
-#
-#        picard MarkDuplicates \
-#           -I {input} \
-#           -O {output.bam_2500} \
-#           -M {output.metrics_2500} \
-#           --TAGGING_POLICY All \
-#           --REMOVE_DUPLICATES \
-#           --OPTICAL_DUPLICATE_PIXEL_DISTANCE 2500
+#        # check that unique reads (MAPQ255) are primary reads
+#        samtools view -h --threads {threads} -f 0x900 -o {output.unique_nonprimary} {input.unique}
+#        
+#        # check that primary reads are unique (MAPQ255)
+#        samtools view -h --threads {threads} {input.primary} | \
+#            awk -F'\t' 'BEGIN {{OFS=FS}} {{if ($5 != "255") {{print $0}} }}' > \
+#            {output.primary_nonunique}
 #        '''
+
+
 #
 #rule deduplicate:
 #    input: os.path.join(DIR_ALIGN, '{timepoint}', 'Aligned.sortedByCoord.out.bam')

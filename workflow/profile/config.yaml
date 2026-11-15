@@ -1,10 +1,9 @@
 # See EMBL blog posts
 # https://www.embl.org/groups/bioinformatics-rome/blog/2022/04/snakemake-profile-3-cluster-submission-defining-parameters/
 # https://www.embl.org/groups/bioinformatics-rome/blog/2022/04/snakemake-profile-4-defining-resources-and-threads/
-cores: 1
-jobs: 12
+jobs: 100
 show-failed-logs: True
-keep-going: True
+# keep-going: True
 printshellcmds: True
 rerun-incomplete: True
 use-conda: True
@@ -20,5 +19,8 @@ default-resources:
 set-resources:
   - align_pass1:cpus_per_task=20
   - align_pass2:cpus_per_task=20
-  - filter_align:cpus_per_task=5
-  - filter_align_check_identical2:cpus_per_task=5
+  - filter_align_unique:cpus_per_task=5
+  - qc_align:cpus_per_task=5
+  - count_align:cpus_per_task=5
+  - count_align_unique:cpus_per_task=5
+  - count_align_unique_dedup:cpus_per_task=5

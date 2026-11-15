@@ -1,9 +1,6 @@
 name: picard
 channels:
-  - defaults
-  - anaconda
   - conda-forge
-  - bioconda
 dependencies:
-  - picard=3.0.0
+  - bioconda::picard=3.0.0
   - openjdk=17.*

@@ -6,6 +6,7 @@ dir_fastqs: '../data/fastqs'
 dir_report: 'report'
 dir_workup: 'workup'
 dir_genome: '/central/groups/guttman/btyeh/ref/star/GRCm38'
+path_log_main: 'workup/log/main.log'
 path_adapters: '../data_aux/adapters_trimmomatic.fa'
 path_annotation: '../data/gencode.vM25.primary_assembly.annotation.gtf.gz'
 read_length: 151
