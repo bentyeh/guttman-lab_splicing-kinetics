@@ -1,3 +1,26 @@
+# Status
+
+As of 2026-11, written by Claude Code Opus 5.5; last active work April 2023
+
+**Simulation and identifiability (complete)**
+- Stochastic simulation and fitting framework in `modules/`.
+- Simulated data for 81 parameter sets on mouse *Actb*, fit with 3 methods (grid search, L-BFGS-B, Gaussian process) for each of 3 statistics (spliced fraction, bond counts, junction counts); results in `data_aux/sim_*` (HPC only, not tracked).
+- Finding (`notebooks/identifiability.ipynb`): spliced fraction is *not* identifiable (different `k_init`/`k_elong` combinations give near-identical trajectories); bond counts are. In spot checks, `k_splice` is recovered well while `k_init` and `k_elong` trade off.
+- Possibly unanalyzed: junction-count fits and the bond-count L-BFGS-B rerun (`--n 100`) were run after `identifiability.ipynb` was last updated.
+
+**Data processing (complete)**
+- Snakemake workflow (`workflow/`) ran to completion on 2023-04-14 for all 12 time points: trimming, two-pass STAR alignment, unique-read filtering, Picard deduplication.
+- Read retention (`notebooks/alignment.ipynb`): >99% survive trimming, ~77% map, ~87% of mapped reads are unique, and only ~30% of unique reads survive deduplication (high PCR duplication; cf. `data/moleculecount.xlsx`).
+
+**Fitting real data (not started)**
+- The only attempt, an early fit to *Nanog* before the `modules/` refactor (`notebooks/archive/2022-11_fit_nanog_gp.ipynb`), gave implausible rates.
+
+**Next steps**
+1. Analyze the junction-count fits; decide which statistic to fit (bond or junction counts).
+2. Add a workflow step that computes per-intron junction/bond counts from the deduplicated BAMs (`workflow/workup/align/{timepoint}/aligned_unique_dedup.sorted.bam`).
+3. Fit real *Actb* and *Nanog* data (`data/sample_*.annot`), then scale to more genes.
+4. Address the "Open questions" below.
+
 # Repository description
 
 - `data/`
