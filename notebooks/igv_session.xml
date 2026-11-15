@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Session genome="mm10" hasGeneTrack="true" hasSequenceTrack="true" locus="chr17:34952143-34952667" path="/groups/guttman/btyeh/splicing-kinetics/notebooks/igv_session.xml" version="8">
+    <Resources>
+        <Resource index="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_LTR.bed.gz.tbi" name="LTR" path="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_LTR.bed.gz" trackLine="useScore=1"/>
+        <Resource index="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_Low_complexity.bed.gz.tbi" name="Low_complexity" path="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_Low_complexity.bed.gz" trackLine="useScore=1"/>
+        <Resource index="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_Satellite.bed.gz.tbi" name="Satellite" path="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_Satellite.bed.gz" trackLine="useScore=1"/>
+        <Resource index="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_LINE.bed.gz.tbi" name="LINE" path="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_LINE.bed.gz" trackLine="useScore=1"/>
+        <Resource index="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_RC.bed.gz.tbi" name="RC" path="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_RC.bed.gz" trackLine="useScore=1"/>
+        <Resource index="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_snRNA.bed.gz.tbi" name="snRNA" path="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_snRNA.bed.gz" trackLine="useScore=1"/>
+        <Resource index="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_Unknown.bed.gz.tbi" name="Unknown" path="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_Unknown.bed.gz" trackLine="useScore=1"/>
+        <Resource index="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_RNA.bed.gz.tbi" name="RNA" path="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_RNA.bed.gz" trackLine="useScore=1"/>
+        <Resource index="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_Other.bed.gz.tbi" name="Other" path="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_Other.bed.gz" trackLine="useScore=1"/>
+        <Resource index="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_Simple_repeat.bed.gz.tbi" name="Simple_repeat" path="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_Simple_repeat.bed.gz" trackLine="useScore=1"/>
+        <Resource path="/groups/guttman/btyeh/splicing-kinetics/notebooks/tmp.bed"/>
+        <Resource index="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_DNA.bed.gz.tbi" name="DNA" path="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_DNA.bed.gz" trackLine="useScore=1"/>
+        <Resource index="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_rRNA.bed.gz.tbi" name="rRNA" path="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_rRNA.bed.gz" trackLine="useScore=1"/>
+        <Resource index="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_scRNA.bed.gz.tbi" name="scRNA" path="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_scRNA.bed.gz" trackLine="useScore=1"/>
+        <Resource index="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_SINE.bed.gz.tbi" name="SINE" path="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_SINE.bed.gz" trackLine="useScore=1"/>
+        <Resource path="/groups/guttman/btyeh/splicing-kinetics/data/dedup/0.MarkDuplicates.dedup.bam"/>
+        <Resource index="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_srpRNA.bed.gz.tbi" name="srpRNA" path="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_srpRNA.bed.gz" trackLine="useScore=1"/>
+        <Resource index="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_tRNA.bed.gz.tbi" name="tRNA" path="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_tRNA.bed.gz" trackLine="useScore=1"/>
+    </Resources>
+    <Panel height="313" name="Panel1679612859121" width="1630">
+        <Track altColor="0,0,178" autoScale="true" color="175,175,175" colorScale="ContinuousColorScale;0.0;10.0;255,255,255;175,175,175" displayMode="COLLAPSED" featureVisibilityWindow="-1" fontSize="10" id="/groups/guttman/btyeh/splicing-kinetics/data/dedup/0.MarkDuplicates.dedup.bam_coverage" name="0.MarkDuplicates.dedup.bam Coverage" showReference="false" snpThreshold="0.2" sortable="true" visible="false">
+            <DataRange baseline="0.0" drawBaseline="true" flipAxis="false" maximum="10.0" minimum="0.0" type="LINEAR"/>
+        </Track>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="-1" fontSize="10" height="60" id="/groups/guttman/btyeh/splicing-kinetics/data/dedup/0.MarkDuplicates.dedup.bam_junctions" name="0.MarkDuplicates.dedup.bam Junctions" sortable="false" visible="false" windowFunction="count">
+            <DataRange baseline="0.0" drawBaseline="true" flipAxis="false" maximum="60.0" minimum="0.0" type="LINEAR"/>
+        </Track>
+        <Track altColor="0,0,178" autoScale="false" color="0,0,178" displayMode="SQUISHED" featureVisibilityWindow="-1" fontSize="10" id="/groups/guttman/btyeh/splicing-kinetics/data/dedup/0.MarkDuplicates.dedup.bam" name="0.MarkDuplicates.dedup.bam" sortable="true" visible="false">
+            <RenderOptions/>
+        </Track>
+    </Panel>
+    <Panel height="734" name="FeaturePanel" width="1630">
+        <Track altColor="0,0,178" autoScale="false" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="-1" fontSize="10" id="Reference sequence" name="Reference sequence" sortable="false" visible="true"/>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;406.0;255,255,255;0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="-1" fontSize="10" height="35" id="mm10_genes" name="Refseq genes" renderer="BASIC_FEATURE" sortable="false" visible="true" windowFunction="count">
+            <DataRange baseline="0.0" drawBaseline="true" flipAxis="false" maximum="406.0" minimum="0.0" type="LINEAR"/>
+        </Track>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" colorScale="ContinuousColorScale;0.0;6.0;255,255,255;0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="-1" fontSize="10" id="/groups/guttman/btyeh/splicing-kinetics/notebooks/tmp.bed" name="tmp.bed" renderer="BASIC_FEATURE" sortable="false" visible="true" windowFunction="count">
+            <DataRange baseline="0.0" drawBaseline="true" flipAxis="false" maximum="6.0" minimum="0.0" type="LINEAR"/>
+        </Track>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="415077800" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_LINE.bed.gz" name="LINE" renderer="BASIC_FEATURE" sortable="true" visible="true" windowFunction="count"/>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="12042804" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_Simple_repeat.bed.gz" name="Simple_repeat" renderer="BASIC_FEATURE" sortable="true" visible="true" windowFunction="count"/>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="7786815" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_LTR.bed.gz" name="LTR" renderer="BASIC_FEATURE" sortable="true" visible="true" windowFunction="count"/>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="1000000" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_SINE.bed.gz" name="SINE" renderer="BASIC_FEATURE" sortable="true" visible="true" windowFunction="count"/>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="27674303" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_Low_complexity.bed.gz" name="Low_complexity" renderer="BASIC_FEATURE" sortable="true" visible="true" windowFunction="count"/>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="68853402" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_DNA.bed.gz" name="DNA" renderer="BASIC_FEATURE" sortable="true" visible="true" windowFunction="count"/>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="2147483647" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_snRNA.bed.gz" name="snRNA" renderer="BASIC_FEATURE" sortable="true" visible="true" windowFunction="count"/>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="1017319503" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_Other.bed.gz" name="Other" renderer="BASIC_FEATURE" sortable="true" visible="true" windowFunction="count"/>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="672283846" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_Satellite.bed.gz" name="Satellite" renderer="BASIC_FEATURE" sortable="true" visible="true" windowFunction="count"/>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="2147483647" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_Unknown.bed.gz" name="Unknown" renderer="BASIC_FEATURE" sortable="true" visible="true" windowFunction="count"/>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="2147483647" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_srpRNA.bed.gz" name="srpRNA" renderer="BASIC_FEATURE" sortable="true" visible="true" windowFunction="count"/>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="2147483647" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_tRNA.bed.gz" name="tRNA" renderer="BASIC_FEATURE" sortable="true" visible="true" windowFunction="count"/>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="2147483647" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_RNA.bed.gz" name="RNA" renderer="BASIC_FEATURE" sortable="true" visible="true" windowFunction="count"/>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="2147483647" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_scRNA.bed.gz" name="scRNA" renderer="BASIC_FEATURE" sortable="true" visible="true" windowFunction="count"/>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="2147483647" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_RC.bed.gz" name="RC" renderer="BASIC_FEATURE" sortable="true" visible="true" windowFunction="count"/>
+        <Track altColor="0,0,178" autoScale="false" clazz="org.broad.igv.track.FeatureTrack" color="0,0,178" displayMode="COLLAPSED" featureVisibilityWindow="2147483647" fontSize="10" id="https://s3.amazonaws.com/igv.org.genomes/mm10/rmsk/mm10_rmsk_rRNA.bed.gz" name="rRNA" renderer="BASIC_FEATURE" sortable="true" visible="true" windowFunction="count"/>
+    </Panel>
+    <PanelLayout dividerFractions="0.009244992295839754,0.49922958397534667"/>
+    <Regions>
+        <Region chromosome="chr1" end="72226438" start="72226265"/>
+        <Region chromosome="chr1" end="72255159" start="72255063"/>
+        <Region chromosome="chr1" end="85864609" start="85864545"/>
+        <Region chromosome="chr1" end="102628327" start="102628190"/>
+        <Region chromosome="chr1" end="118459245" start="118459148"/>
+        <Region chromosome="chr1" end="122357243" start="122357126"/>
+        <Region chromosome="chr1" end="153509667" start="153509576"/>
+        <Region chromosome="chr1" end="167340354" start="167340318"/>
+        <Region chromosome="chr2" end="5379376" start="5379047"/>
+        <Region chromosome="chr2" end="20900014" start="20899858"/>
+        <Region chromosome="chr2" end="20900210" start="20900019"/>
+        <Region chromosome="chr2" end="22744975" start="22744804"/>
+        <Region chromosome="chr2" end="73868032" start="73867888"/>
+        <Region chromosome="chr2" end="90395185" start="90395144"/>
+        <Region chromosome="chr2" end="102829444" start="102829378"/>
+        <Region chromosome="chr2" end="122375504" start="122375502"/>
+        <Region chromosome="chr2" end="122377397" start="122377362"/>
+        <Region chromosome="chr2" end="122378105" start="122377968"/>
+        <Region chromosome="chr3" end="5860826" start="5860318"/>
+        <Region chromosome="chr3" end="62159231" start="62159102"/>
+        <Region chromosome="chr3" end="96263085" start="96263030"/>
+        <Region chromosome="chr3" end="96263222" start="96263183"/>
+        <Region chromosome="chr3" end="96270189" start="96269699"/>
+        <Region chromosome="chr3" end="96334660" start="96334589"/>
+        <Region chromosome="chr3" end="96341195" start="96341002"/>
+        <Region chromosome="chr3" end="96402363" start="96402339"/>
+        <Region chromosome="chr4" end="43493049" start="43492780"/>
+        <Region chromosome="chr4" end="132353574" start="132353483"/>
+        <Region chromosome="chr4" end="132353576" start="132353575"/>
+        <Region chromosome="chr5" end="114707371" start="114707263"/>
+        <Region chromosome="chr5" end="115489560" start="115489509"/>
+        <Region chromosome="chr5" end="142903941" start="142903869"/>
+        <Region chromosome="chr5" end="142904108" start="142904068"/>
+        <Region chromosome="chr5" end="142904111" start="142904109"/>
+        <Region chromosome="chr5" end="142904116" start="142904112"/>
+        <Region chromosome="chr5" end="142904183" start="142904117"/>
+        <Region chromosome="chr5" end="142904186" start="142904184"/>
+        <Region chromosome="chr5" end="142904456" start="142904362"/>
+        <Region chromosome="chr5" end="142904476" start="142904475"/>
+        <Region chromosome="chr5" end="142904479" start="142904478"/>
+        <Region chromosome="chr5" end="142904751" start="142904608"/>
+        <Region chromosome="chr5" end="142905692" start="142905617"/>
+        <Region chromosome="chr5" end="142906722" start="142906575"/>
+        <Region chromosome="chr5" end="146261365" start="146260992"/>
+        <Region chromosome="chr6" end="3200848" start="3200767"/>
+        <Region chromosome="chr6" end="3200904" start="3200902"/>
+        <Region chromosome="chr6" end="3200914" start="3200912"/>
+        <Region chromosome="chr6" end="3200939" start="3200936"/>
+        <Region chromosome="chr6" end="3201067" start="3200973"/>
+        <Region chromosome="chr6" end="3201319" start="3201302"/>
+        <Region chromosome="chr6" end="3201324" start="3201320"/>
+        <Region chromosome="chr6" end="3201642" start="3201327"/>
+        <Region chromosome="chr6" end="49236615" start="49236451"/>
+        <Region chromosome="chr6" end="145933022" start="145932845"/>
+        <Region chromosome="chr7" end="45458238" start="45458199"/>
+        <Region chromosome="chr7" end="45459230" start="45459225"/>
+        <Region chromosome="chr7" end="45459725" start="45459677"/>
+        <Region chromosome="chr7" end="130834639" start="130834426"/>
+        <Region chromosome="chr8" end="3754489" start="3754399"/>
+        <Region chromosome="chr8" end="15520124" start="15519774"/>
+        <Region chromosome="chr8" end="31149955" start="31149836"/>
+        <Region chromosome="chr8" end="94172850" start="94172836"/>
+        <Region chromosome="chr8" end="94172855" start="94172852"/>
+        <Region chromosome="chr8" end="94172859" start="94172856"/>
+        <Region chromosome="chr8" end="94704050" start="94704020"/>
+        <Region chromosome="chr9" end="3258932" start="3258819"/>
+        <Region chromosome="chr9" end="44334889" start="44334702"/>
+        <Region chromosome="chr9" end="56223754" start="56223571"/>
+        <Region chromosome="chr9" end="56223963" start="56223816"/>
+        <Region chromosome="chr9" end="78175558" start="78175304"/>
+        <Region chromosome="chr9" end="78479073" start="78478957"/>
+        <Region chromosome="chr9" end="78479075" start="78479074"/>
+        <Region chromosome="chr9" end="78479094" start="78479087"/>
+        <Region chromosome="chr9" end="78479192" start="78479113"/>
+        <Region chromosome="chr9" end="78479350" start="78479277"/>
+        <Region chromosome="chr9" end="78479725" start="78479661"/>
+        <Region chromosome="chr9" end="78479730" start="78479727"/>
+        <Region chromosome="chr9" end="78479733" start="78479731"/>
+        <Region chromosome="chr9" end="78479750" start="78479734"/>
+        <Region chromosome="chr9" end="78480420" start="78480372"/>
+        <Region chromosome="chr9" end="78480680" start="78480510"/>
+        <Region chromosome="chr9" end="78481660" start="78481638"/>
+        <Region chromosome="chr9" end="110281368" start="110281244"/>
+        <Region chromosome="chr9" end="118675057" start="118674952"/>
+        <Region chromosome="chr9" end="123462187" start="123461791"/>
+        <Region chromosome="chr10" end="11492184" start="11492115"/>
+        <Region chromosome="chr10" end="40258647" start="40258492"/>
+        <Region chromosome="chr10" end="82955348" start="82955283"/>
+        <Region chromosome="chr10" end="105238549" start="105238322"/>
+        <Region chromosome="chr11" end="48823799" start="48823780"/>
+        <Region chromosome="chr11" end="48823803" start="48823800"/>
+        <Region chromosome="chr11" end="48857036" start="48856981"/>
+        <Region chromosome="chr11" end="62603023" start="62602927"/>
+        <Region chromosome="chr11" end="69037941" start="69037884"/>
+        <Region chromosome="chr11" end="79385758" start="79385710"/>
+        <Region chromosome="chr11" end="83271697" start="83271609"/>
+        <Region chromosome="chr11" end="87448849" start="87448780"/>
+        <Region chromosome="chr11" end="101604989" start="101604984"/>
+        <Region chromosome="chr11" end="106066854" start="106066787"/>
+        <Region chromosome="chr11" end="106501064" start="106500989"/>
+        <Region chromosome="chr11" end="109012122" start="109011645"/>
+        <Region chromosome="chr11" end="120346533" start="120346512"/>
+        <Region chromosome="chr11" end="120346678" start="120346636"/>
+        <Region chromosome="chr11" end="120348097" start="120348048"/>
+        <Region chromosome="chr11" end="120348468" start="120348424"/>
+        <Region chromosome="chr12" end="54696897" start="54696807"/>
+        <Region chromosome="chr12" end="54734703" start="54734622"/>
+        <Region chromosome="chr12" end="59040531" start="59040363"/>
+        <Region chromosome="chr12" end="78351173" start="78350868"/>
+        <Region chromosome="chr12" end="99645678" start="99645516"/>
+        <Region chromosome="chr13" end="9834540" start="9834305"/>
+        <Region chromosome="chr13" end="21172934" start="21172848"/>
+        <Region chromosome="chr13" end="21715863" start="21715849"/>
+        <Region chromosome="chr13" end="21715930" start="21715925"/>
+        <Region chromosome="chr13" end="21715946" start="21715931"/>
+        <Region chromosome="chr13" end="21716479" start="21716422"/>
+        <Region chromosome="chr13" end="21717854" start="21717628"/>
+        <Region chromosome="chr13" end="21717863" start="21717857"/>
+        <Region chromosome="chr13" end="21717873" start="21717865"/>
+        <Region chromosome="chr13" end="21717879" start="21717874"/>
+        <Region chromosome="chr13" end="21718107" start="21717887"/>
+        <Region chromosome="chr13" end="21722124" start="21722123"/>
+        <Region chromosome="chr13" end="21722138" start="21722125"/>
+        <Region chromosome="chr13" end="21722140" start="21722139"/>
+        <Region chromosome="chr13" end="21722145" start="21722143"/>
+        <Region chromosome="chr13" end="21722153" start="21722146"/>
+        <Region chromosome="chr13" end="21722214" start="21722174"/>
+        <Region chromosome="chr13" end="21722366" start="21722271"/>
+        <Region chromosome="chr13" end="21722450" start="21722373"/>
+        <Region chromosome="chr13" end="21750295" start="21750199"/>
+        <Region chromosome="chr13" end="21750468" start="21750389"/>
+        <Region chromosome="chr13" end="21753527" start="21753515"/>
+        <Region chromosome="chr13" end="21753817" start="21753710"/>
+        <Region chromosome="chr13" end="21754251" start="21754095"/>
+        <Region chromosome="chr13" end="21754473" start="21754401"/>
+        <Region chromosome="chr13" end="21780002" start="21779851"/>
+        <Region chromosome="chr13" end="21780015" start="21780004"/>
+        <Region chromosome="chr13" end="21780122" start="21780049"/>
+        <Region chromosome="chr13" end="21780132" start="21780128"/>
+        <Region chromosome="chr13" end="21780136" start="21780133"/>
+        <Region chromosome="chr13" end="21780604" start="21780143"/>
+        <Region chromosome="chr13" end="21783169" start="21782942"/>
+        <Region chromosome="chr13" end="21783390" start="21783232"/>
+        <Region chromosome="chr13" end="21832194" start="21832047"/>
+        <Region chromosome="chr13" end="21848077" start="21847990"/>
+        <Region chromosome="chr13" end="21897010" start="21896941"/>
+        <Region chromosome="chr13" end="21914910" start="21914869"/>
+        <Region chromosome="chr13" end="22035992" start="22035848"/>
+        <Region chromosome="chr13" end="22036312" start="22036144"/>
+        <Region chromosome="chr13" end="22041253" start="22041212"/>
+        <Region chromosome="chr13" end="22041308" start="22041255"/>
+        <Region chromosome="chr13" end="22043465" start="22043200"/>
+        <Region chromosome="chr13" end="22043644" start="22043505"/>
+        <Region chromosome="chr13" end="23412968" start="23412942"/>
+        <Region chromosome="chr13" end="23531189" start="23531131"/>
+        <Region chromosome="chr13" end="23535594" start="23535462"/>
+        <Region chromosome="chr13" end="23544658" start="23544479"/>
+        <Region chromosome="chr13" end="23544924" start="23544800"/>
+        <Region chromosome="chr13" end="23551436" start="23551421"/>
+        <Region chromosome="chr13" end="23551648" start="23551512"/>
+        <Region chromosome="chr13" end="23555591" start="23555035"/>
+        <Region chromosome="chr13" end="23555593" start="23555592"/>
+        <Region chromosome="chr13" end="23555750" start="23555655"/>
+        <Region chromosome="chr13" end="23562382" start="23561899"/>
+        <Region chromosome="chr13" end="23571105" start="23571010"/>
+        <Region chromosome="chr13" end="23571860" start="23571401"/>
+        <Region chromosome="chr13" end="23574536" start="23574462"/>
+        <Region chromosome="chr13" end="23581934" start="23581594"/>
+        <Region chromosome="chr13" end="23585978" start="23585557"/>
+        <Region chromosome="chr13" end="23683937" start="23683800"/>
+        <Region chromosome="chr13" end="23684351" start="23684208"/>
+        <Region chromosome="chr13" end="23684653" start="23684514"/>
+        <Region chromosome="chr13" end="23698234" start="23698140"/>
+        <Region chromosome="chr13" end="23698443" start="23698310"/>
+        <Region chromosome="chr13" end="23738956" start="23738855"/>
+        <Region chromosome="chr13" end="23739444" start="23739383"/>
+        <Region chromosome="chr13" end="23745516" start="23745071"/>
+        <Region chromosome="chr13" end="23747220" start="23746757"/>
+        <Region chromosome="chr13" end="23751249" start="23751104"/>
+        <Region chromosome="chr13" end="23752495" start="23752355"/>
+        <Region chromosome="chr13" end="23760946" start="23760837"/>
+        <Region chromosome="chr13" end="23761168" start="23760962"/>
+        <Region chromosome="chr13" end="23762122" start="23761916"/>
+        <Region chromosome="chr13" end="23762376" start="23762235"/>
+        <Region chromosome="chr13" end="23764377" start="23763674"/>
+        <Region chromosome="chr13" end="23764410" start="23764381"/>
+        <Region chromosome="chr13" end="44870024" start="44869571"/>
+        <Region chromosome="chr13" end="97190632" start="97190545"/>
+        <Region chromosome="chr13" end="112578314" start="112578182"/>
+        <Region chromosome="chr14" end="19278203" start="19278149"/>
+        <Region chromosome="chr14" end="50807761" start="50807444"/>
+        <Region chromosome="chr14" end="54517784" start="54517732"/>
+        <Region chromosome="chr14" end="104716059" start="104715773"/>
+        <Region chromosome="chr15" end="75086837" start="75086661"/>
+        <Region chromosome="chr15" end="75086973" start="75086881"/>
+        <Region chromosome="chr15" end="75086976" start="75086974"/>
+        <Region chromosome="chr15" end="80083346" start="80083204"/>
+        <Region chromosome="chr15" end="86195324" start="86194839"/>
+        <Region chromosome="chr16" end="5002252" start="5002153"/>
+        <Region chromosome="chr16" end="11144315" start="11143905"/>
+        <Region chromosome="chr16" end="17222444" start="17222334"/>
+        <Region chromosome="chr16" end="35981818" start="35981687"/>
+        <Region chromosome="chr16" end="57391690" start="57391112"/>
+        <Region chromosome="chr16" end="57441887" start="57441874"/>
+        <Region chromosome="chr17" end="34952430" start="34952319"/>
+        <Region chromosome="chr17" end="36231357" start="36231260"/>
+        <Region chromosome="chr17" end="36231431" start="36231383"/>
+        <Region chromosome="chr17" end="36231443" start="36231442"/>
+        <Region chromosome="chr17" end="36231600" start="36231524"/>
+        <Region chromosome="chr17" end="39848829" start="39842996"/>
+        <Region chromosome="chr17" end="50420179" start="50420111"/>
+        <Region chromosome="chr17" end="70963895" start="70963657"/>
+        <Region chromosome="chr18" end="54699138" start="54699135"/>
+        <Region chromosome="chr18" end="54699148" start="54699139"/>
+        <Region chromosome="chr18" end="68692314" start="68692062"/>
+        <Region chromosome="chr18" end="73533480" start="73533466"/>
+        <Region chromosome="chr19" end="8723645" start="8723599"/>
+        <Region chromosome="chr19" end="12009676" start="12009623"/>
+        <Region chromosome="chr19" end="12009703" start="12009683"/>
+        <Region chromosome="chrX" end="87238394" start="87238368"/>
+        <Region chromosome="chrX" end="136380980" start="136380814"/>
+        <Region chromosome="chrX" end="136397140" start="136396953"/>
+        <Region chromosome="chrM" end="1032" start="69"/>
+        <Region chromosome="chrM" end="3521" start="1163"/>
+        <Region chromosome="chrM" end="3523" start="3522"/>
+        <Region chromosome="chrM" end="4431" start="3861"/>
+        <Region chromosome="chrM" end="4953" start="4851"/>
+        <Region chromosome="chrM" end="6534" start="5324"/>
+        <Region chromosome="chrM" end="11306" start="11000"/>
+        <Region chromosome="chrM" end="11473" start="11398"/>
+        <Region chromosome="chrM" end="13189" start="12080"/>
+        <Region chromosome="chrM" end="13692" start="13590"/>
+        <Region chromosome="chrM" end="15225" start="14145"/>
+        <Region chromosome="chrM" end="15418" start="15312"/>
+        <Region chromosome="chrM" end="15421" start="15419"/>
+        <Region chromosome="chrM" end="15746" start="15642"/>
+        <Region chromosome="chrM" end="16181" start="15783"/>
+    </Regions>
+    <HiddenAttributes>
+        <Attribute name="DATA FILE"/>
+        <Attribute name="DATA TYPE"/>
+        <Attribute name="NAME"/>
+    </HiddenAttributes>
+</Session>
