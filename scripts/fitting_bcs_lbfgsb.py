@@ -25,22 +25,31 @@ def main(n, index):
     data_time = time_steps - 1
     bounds = np.log10(np.array([(0.01, 20), (5e-4, 0.5), (1e-3, 0.5), (10, 100)]))
     x0 = np.array([np.mean(bound) for bound in bounds])
+
+    loss_sse_args = fitting.loss_sse_args(
+        stats_fun='splice_site_counts',
+        data_time=data_time,
+        data=data,
+        pos_intron=pos_intron,
+        gene_length=gene_length,
+        n=n,
+        kwargs=dict(
+            log10=True,
+            use_tqdm=True,
+            use_pool=True))
     time_start = time.time()
     res = scipy.optimize.minimize(
         fitting.loss_sse,
         x0,
-        args=('splice_site_counts', data_time, data, pos_intron, gene_length,
-              n, int(1e9), None, dict(log10=True, use_tqdm=True, use_pool=True)),
+        args=loss_sse_args,
         method='L-BFGS-B',
         bounds=bounds,
-        # options={'maxiter': 5, 'eps': 1e-1},
+        options={'eps': 0.1},
         callback=lambda xk: fitting.callback_scipy(
             xk,
-            'splice_site_counts', data_time, data, pos_intron, gene_length,
+            *loss_sse_args,
             log10=True,
-            time_start=time_start,
-            n=n,
-            kwargs=dict(log10=True, use_tqdm=True, use_pool=True)))
+            time_start=time_start))
     with open(os.path.join(dir_bcs, f'fit-lbfgsb-{index}.pkl'), 'wb') as f:
         pickle.dump(res, f)
     return res

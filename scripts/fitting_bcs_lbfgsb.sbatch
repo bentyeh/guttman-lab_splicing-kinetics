@@ -12,4 +12,4 @@
 
 source ~/.bashrc
 conda activate py3
-python "/central/groups/guttman/btyeh/splicing-kinetics/scripts/fitting_bcs_lbfgsb.py" $SLURM_ARRAY_TASK_ID
+python "/central/groups/guttman/btyeh/splicing-kinetics/scripts/fitting_bcs_lbfgsb.py" $SLURM_ARRAY_TASK_ID --n 100
